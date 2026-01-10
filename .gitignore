@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.save
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage files (optional - uncomment if you don't want to commit storage files)
+# server/storage/
+
