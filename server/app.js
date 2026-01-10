@@ -54,6 +54,7 @@ const handleGETRequest = async (req, res) => {
       const fileHandle = await open(filePath);
       const stats = await fileHandle.stat();
       if (stats.isDirectory()) {
+        await fileHandle.close();
         serveDirectory(req, res);
       } else {
         // Set the correct Content-Type header based on file extension
@@ -73,8 +74,25 @@ const handleGETRequest = async (req, res) => {
 
         const readStream = fileHandle.createReadStream();
         readStream.pipe(res);
+
+        // Ensure file handle is closed only once
+        let isClosed = false;
+        const closeHandle = async () => {
+          if (!isClosed) {
+            isClosed = true;
+            await fileHandle.close();
+          }
+        };
+
+        // Close when response finishes or client disconnects
+        res.on("finish", closeHandle);
+        res.on("close", closeHandle);
+
+        readStream.on("error", async (err) => {
+          console.log("Stream error:", err.message);
+          await closeHandle();
+        });
       }
-      // fileHandle.close();
     } catch (err) {
       console.log(err.message);
       res.end("Not Found!");
@@ -82,7 +100,7 @@ const handleGETRequest = async (req, res) => {
   }
 };
 const handlePOSTRequest = (req, res) => {
-    const writeStream = createWriteStream(
+  const writeStream = createWriteStream(
     `./storage/${req.headers.directory}/${req.headers.filename}`
   );
   let count = 0;
@@ -110,10 +128,7 @@ const handleDELETERequest = (req, res) => {
 const handlePATCHRequest = (req, res) => {
   req.on("data", async (chunk) => {
     const data = JSON.parse(chunk.toString());
-    await rename(
-      `./storage${data.oldFile}`,
-      `./storage${data.newFile}`
-    );
+    await rename(`./storage${data.oldFile}`, `./storage${data.newFile}`);
     res.end("File renamed");
   });
 };
