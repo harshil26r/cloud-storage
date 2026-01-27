@@ -1,9 +1,14 @@
 import express from "express";
-import { open, readdir, rename, rm } from "fs/promises";
+import { createWriteStream } from "fs";
+import { readdir, rename, rm } from "fs/promises";
 import mime from "mime";
+import cors from 'cors'
 
 const app = express();
 const port = 4000;
+
+app.use(express.json()); // parse body for all request
+app.use(cors())
 
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -17,13 +22,12 @@ app.use((req, res, next) => {
   express.static("storage")(req, res, next); // serve public folder
 });
 
-app.use(express.json()); // parse body for all request
 
-app.get("/:filename", async (req, res) => {
-  console.log(req.url);
+app.get("/?*", async (req, res) => {
+  const { 0: filePath } = req.params
 
   try {
-    const items = await readdir(`./storage${req.url}`, {
+    const items = await readdir(`./storage${filePath === '' ? '' : '/' + filePath}`, {
       withFileTypes: true,
     });
 
@@ -38,17 +42,33 @@ app.get("/:filename", async (req, res) => {
   }
 });
 
-// app.post("/", (req, res) => {
-//   res.send("Got a POST request");
-// });
+app.post("/?*", (req, res) => {
+  const { 0: filePath } = req.params
 
-// app.put("/user", (req, res) => {
-//   res.send("Got a PUT request at /user");
-// });
+  const writableStream = createWriteStream(`./storage/${filePath === '' ? '' : '/' + filePath}`)
+  req.pipe(writableStream)
+  req.on('end', () => {
+    res.json({ message: "File Uploaded" });
+  })
+});
 
-// app.delete("/user", (req, res) => {
-//   res.send("Got a DELETE request at /user");
-// });
+app.patch('/?*', async (req, res) => {
+  const { 0: filePath } = req.params
+
+  await rename(`./storage/${filePath}`, `./storage${req.body?.newFileName}`);
+  res.json({ message: "File renamed" });
+
+})
+
+app.delete("/?*", async (req, res) => {
+  const { 0: filePath } = req.params
+  try {
+    await rm(`./storage/${filePath}`);
+    res.json({ message: "File deleted successfully" });
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
