@@ -1,0 +1,51 @@
+[
+    {
+        "id": "47f24c0c-59d0-4fbc-80dc-2c0cab3a7ef6",
+        "name": "root-anurag@gmail.com",
+        "userId": "c9174f25-c5d0-48df-bf3b-736f3f539f78",
+        "parentDirId": null,
+        "files": [],
+        "directories": [
+            "de4660ac-5e62-4453-aa53-c41c74844b2e",
+            "0cb864fd-05d9-43e7-bb1d-5f3c86db7ca7",
+            "e01c6e9f-f924-4a0c-b219-048194e335f2",
+            "095a3caa-fc8e-42f7-bfc0-5ad66087e8c0"
+        ]
+    },
+    {
+        "id": "de4660ac-5e62-4453-aa53-c41c74844b2e",
+        "name": "New Folder",
+        "parentDirId": "47f24c0c-59d0-4fbc-80dc-2c0cab3a7ef6",
+        "files": [],
+        "directories": []
+    },
+    {
+        "id": "0cb864fd-05d9-43e7-bb1d-5f3c86db7ca7",
+        "name": "New Folder2",
+        "parentDirId": "47f24c0c-59d0-4fbc-80dc-2c0cab3a7ef6",
+        "files": [],
+        "directories": []
+    },
+    {
+        "id": "e01c6e9f-f924-4a0c-b219-048194e335f2",
+        "name": "New Folder",
+        "parentDirId": "47f24c0c-59d0-4fbc-80dc-2c0cab3a7ef6",
+        "files": [],
+        "directories": []
+    },
+    {
+        "id": "1e446d5c-3db1-4361-bc17-c4f7820fe487",
+        "name": "root-procodrr@gmail.com",
+        "userId": "dc738d4e-3970-48a6-a15d-8c65785d6eb4",
+        "parentDirId": null,
+        "files": [],
+        "directories": []
+    },
+    {
+        "id": "095a3caa-fc8e-42f7-bfc0-5ad66087e8c0",
+        "name": "Pro",
+        "parentDirId": "47f24c0c-59d0-4fbc-80dc-2c0cab3a7ef6",
+        "files": [],
+        "directories": []
+    }
+]
