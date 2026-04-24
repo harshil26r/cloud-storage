@@ -1,7 +1,12 @@
 [
-    {
-        "id": "c4c76c8f-0733-4ecf-a749-2d1c8e1fe46c",
-        "extenstion": ".webp",
-        "name": "sdflksajfd.webp"
-    }
+  {
+    "id": "c4c76c8f-0733-4ecf-a749-2d1c8e1fe46c",
+    "extenstion": ".webp",
+    "name": "sdflksajfd.webp"
+  },
+  {
+    "id": "8084242f-438c-4111-a14a-f73a5c7de15a",
+    "extenstion": ".jpg",
+    "name": "photo.jpg"
+  }
 ]

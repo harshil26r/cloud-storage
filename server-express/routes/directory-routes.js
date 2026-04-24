@@ -1,27 +1,26 @@
 import { Router } from "express";
 import { readdir } from "fs/promises";
 import mime from "mime";
+import directories from "../directoriesDB.json" with { type: "json" };
+import filesData from "../filesDB.json" with { type: "json" };
 
 const dirRouter = Router();
 
-dirRouter.get("/{*splat}", async (req, res) => {
-    const filePath = req.params.splat
-    try {
-        const items = await readdir(`./storage/${filePath === undefined ? '' : '/' + filePath?.join('/')}`, {
-            withFileTypes: true,
-        });
+dirRouter.get("/{:id}", async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    res.status(200).send(directories[0]);
+  } else {
+    const directoryData = directories?.find((folder) => folder.id === id);
 
-        const result = items.map((item) => ({
-            name: item.name,
-            type: item.isDirectory() ? "folder" : `file : ${mime.getType(item.name)}`,
-        }));
+    const files = directoryData.files.map((fileId) =>
+      filesData.find((file) => file.id === fileId),
+    );
 
-        res.status(200).json(result);
-    } catch (error) {
-        console.log(error);
-
-        res.status(501).json({ message: "internal error" });
+    if (directoryData) {
+      res.status(200).send({ ...directoryData, files });
     }
+  }
 });
 
 export default dirRouter;
