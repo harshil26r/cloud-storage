@@ -1,74 +1,30 @@
 import express from "express";
-import { createWriteStream } from "fs";
-import { readdir, rename, rm } from "fs/promises";
-import mime from "mime";
 import cors from 'cors'
+import dirRouter from "./routes/directory-routes.js";
+import fileRouter from "./routes/files-routes.js";
+// import jsonServer from 'json-server'
+// import path from "path"
 
-const app = express();
 const port = 4000;
+const app = express();
 
 app.use(express.json()); // parse body for all request
 app.use(cors())
 
-app.use((req, res, next) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  next();
-});
 
 app.use((req, res, next) => {
+  res.set("Access-Control-Allow-Origin", "*");
   if (req.query.action === "download") {
     res.set("Content-Disposition", `attachment;`);
   }
   express.static("storage")(req, res, next); // serve public folder
 });
 
+// Directory routes
+app.use('/directory', dirRouter)
 
-app.get("/?*", async (req, res) => {
-  const { 0: filePath } = req.params
-
-  try {
-    const items = await readdir(`./storage${filePath === '' ? '' : '/' + filePath}`, {
-      withFileTypes: true,
-    });
-
-    const result = items.map((item) => ({
-      name: item.name,
-      type: item.isDirectory() ? "folder" : `file : ${mime.getType(item.name)}`,
-    }));
-
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(501).json({ message: "internal error" });
-  }
-});
-
-app.post("/?*", (req, res) => {
-  const { 0: filePath } = req.params
-
-  const writableStream = createWriteStream(`./storage/${filePath === '' ? '' : '/' + filePath}`)
-  req.pipe(writableStream)
-  req.on('end', () => {
-    res.json({ message: "File Uploaded" });
-  })
-});
-
-app.patch('/?*', async (req, res) => {
-  const { 0: filePath } = req.params
-
-  await rename(`./storage/${filePath}`, `./storage${req.body?.newFileName}`);
-  res.json({ message: "File renamed" });
-
-})
-
-app.delete("/?*", async (req, res) => {
-  const { 0: filePath } = req.params
-  try {
-    await rm(`./storage/${filePath}`);
-    res.json({ message: "File deleted successfully" });
-  } catch (err) {
-    res.status(401).json({ message: err.message });
-  }
-});
+// File routes
+app.use('/file', fileRouter)
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
