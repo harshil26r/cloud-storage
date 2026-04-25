@@ -1,12 +1,20 @@
 [
   {
-    "id": "c4c76c8f-0733-4ecf-a749-2d1c8e1fe46c",
-    "extenstion": ".webp",
-    "name": "sdflksajfd.webp"
+    "id": "2532ee8f-4ebc-4046-b5fe-883d1322f6ee",
+    "extenstion": ".jpg",
+    "name": "photo1.jpg",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
   },
   {
-    "id": "8084242f-438c-4111-a14a-f73a5c7de15a",
+    "id": "b8bca9d2-d408-4db3-800f-6c783c648cca",
     "extenstion": ".jpg",
-    "name": "photo.jpg"
+    "name": "photo2.jpg",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af",
+    "extenstion": ".jpg",
+    "name": "IMG_3443.jpg",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
   }
 ]

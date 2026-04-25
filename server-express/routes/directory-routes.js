@@ -8,18 +8,15 @@ const dirRouter = Router();
 
 dirRouter.get("/{:id}", async (req, res) => {
   const { id } = req.params;
-  if (!id) {
-    res.status(200).send(directories[0]);
-  } else {
-    const directoryData = directories?.find((folder) => folder.id === id);
+  const directoryData = directories?.find(
+    (folder) => folder.id === id || directories[0]?.id,
+  );
+  const files = directoryData.files.map((fileId) =>
+    filesData.find((file) => file.id === fileId),
+  );
 
-    const files = directoryData.files.map((fileId) =>
-      filesData.find((file) => file.id === fileId),
-    );
-
-    if (directoryData) {
-      res.status(200).send({ ...directoryData, files });
-    }
+  if (directoryData) {
+    res.status(200).send({ ...directoryData, files });
   }
 });
 

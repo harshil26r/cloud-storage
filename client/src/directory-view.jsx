@@ -18,8 +18,8 @@ function DirectoryView() {
     navigate(`/${newPath}`);
   };
 
-  const handleDelete = async (filename) => {
-    const response = await fetch(`${BASE_URL}${currentPath}/${filename}`, {
+  const handleDelete = async (id) => {
+    const response = await fetch(`${BASE_URL}file/${id}`, {
       method: "DELETE",
     });
     const data = await response.text();
@@ -30,13 +30,11 @@ function DirectoryView() {
     setNewFileName(oldFileName);
   };
 
-  const handleSaveFileName = async (oldFileName) => {
+  const handleSaveFileName = async (oldFileName, id) => {
     setNewFileName(oldFileName);
 
-    const newFile = `/${currentPath}/${newFileName}`;
-    console.log(newFile);
-
-    const response = await fetch(`${BASE_URL}${currentPath}/${oldFileName}`, {
+    const newFile = `${newFileName.split(".")[0]}`;
+    const response = await fetch(`${BASE_URL}file${currentPath}/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -50,19 +48,22 @@ function DirectoryView() {
   };
 
   const getAllFiles = async (path = "") => {
-    const response = await fetch(`${BASE_URL}${path === "" ? "" : path}`, {
-      method: "GET",
-    });
+    const response = await fetch(
+      `${BASE_URL}directory${path === "" ? "" : path}`,
+      {
+        method: "GET",
+      },
+    );
     const result = await response.json();
-    if (!!result?.length) {
-      setFileList(result);
+    if (!!result?.files?.length) {
+      setFileList(result?.files);
     }
   };
 
   const getFileUrl = (filename) => {
     const fullPath =
       currentPath === "/" ? `/${filename}` : `${currentPath}/${filename}`;
-    return `${BASE_URL}${
+    return `${BASE_URL}file/${
       fullPath.startsWith("/") ? fullPath.slice(1) : fullPath
     }`;
   };
@@ -70,7 +71,7 @@ function DirectoryView() {
   const uploadFileInCurrentDir = async (e) => {
     const file = e.target.files[0];
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BASE_URL}${currentPath}/${file.name}`, true);
+    xhr.open("POST", `${BASE_URL}file/${file.name}`, true);
     xhr.setRequestHeader("filename", file.name);
     xhr.setRequestHeader("directory", currentPath);
     xhr.addEventListener("load", () => {
@@ -209,7 +210,7 @@ function DirectoryView() {
         {/* Files Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {fileList?.map((item, index) => {
-            const fileUrl = getFileUrl(item?.name);
+            const fileUrl = getFileUrl(item?.id);
             const isFolder = item?.type === "folder";
 
             return (
@@ -339,7 +340,9 @@ function DirectoryView() {
                             Rename
                           </button>
                           <button
-                            onClick={() => handleSaveFileName(item?.name)}
+                            onClick={() =>
+                              handleSaveFileName(item?.name, item?.id)
+                            }
                             className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                           >
                             <svg
@@ -359,7 +362,7 @@ function DirectoryView() {
                           </button>
                         </div>
                         <button
-                          onClick={() => handleDelete(`/${item?.name}`)}
+                          onClick={() => handleDelete(`${item?.id}`)}
                           className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                         >
                           <svg
