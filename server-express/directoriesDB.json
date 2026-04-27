@@ -1,14 +1,1 @@
-[
-  {
-    "id": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd",
-    "name": "root",
-    "parentDirId": null,
-    "files": [
-      "2532ee8f-4ebc-4046-b5fe-883d1322f6ee",
-      "b8bca9d2-d408-4db3-800f-6c783c648cca",
-      "5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af",
-      "004b9690-59ea-49ff-8342-783ed8e31022"
-    ],
-    "directories": []
-  }
-]
+[{"id":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","name":"root","parentDirId":null,"files":["2532ee8f-4ebc-4046-b5fe-883d1322f6ee","b8bca9d2-d408-4db3-800f-6c783c648cca","5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af","004b9690-59ea-49ff-8342-783ed8e31022"],"directories":["62e2af15-36fc-4415-9ceb-b6c42e944ab5","3b028a74-3d8b-43e5-9a84-8aaf85df9340"]},{"id":"76da53e7-c9ad-447e-96a2-9d69f82c7a55","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":[],"directories":[]},{"id":"62e2af15-36fc-4415-9ceb-b6c42e944ab5","name":"Anime","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":["98f9f5a1-43e9-4516-88a2-7bb0b56ba8ce"],"directories":[]},{"id":"3b028a74-3d8b-43e5-9a84-8aaf85df9340","name":"Movies","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":[],"directories":[]}]
