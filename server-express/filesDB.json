@@ -2,17 +2,23 @@
   {
     "id": "2532ee8f-4ebc-4046-b5fe-883d1322f6ee",
     "extenstion": ".jpg",
-    "name": "photo1.jpg",
+    "name": "photo11.jpg",
     "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
   },
   {
     "id": "b8bca9d2-d408-4db3-800f-6c783c648cca",
     "extenstion": ".jpg",
-    "name": "photo2.jpg",
+    "name": "photo22.jpg",
     "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
   },
   {
     "id": "5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af",
+    "extenstion": ".jpg",
+    "name": "IMG_3443.jpg",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "004b9690-59ea-49ff-8342-783ed8e31022",
     "extenstion": ".jpg",
     "name": "IMG_3443.jpg",
     "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
