@@ -26,9 +26,11 @@ app.use("/directory", dirRouter);
 app.use("/file", fileRouter);
 
 // Globle Error Handler
-app.use((err, req, res, next) => {
-  res.status(err.status || 500).json({ message: "Something went wrong!" });
-});
+// app.use((err, req, res, next) => {
+//   res
+//     .status(err.status || 500)
+//     .json({ message: `Something went wrong! ${err}` });
+// });
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

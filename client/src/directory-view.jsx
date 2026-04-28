@@ -72,18 +72,20 @@ function DirectoryView() {
 
   const uploadFileInCurrentDir = async (e) => {
     const file = e.target.files[0];
+    const form = new FormData();
+    form.append("file", file);
+    form.append("parentDirId", directoryId || currentDir?.id);
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BASE_URL}file/${file.name}`, true);
-    xhr.setRequestHeader("filename", file.name);
-    xhr.setRequestHeader("parentDirId", directoryId);
+    xhr.open("POST", `${BASE_URL}file/`, true);
     xhr.addEventListener("load", () => {
       getAllFiles();
+      e.target.value = ""; // Reset input so same file can be selected again
     });
     xhr.upload.addEventListener("progress", (e) => {
       const totalProgress = (e.loaded / e.total) * 100;
-      // setProgress(totalProgress.toFixed(2));
+      console.log(totalProgress);
     });
-    xhr.send(file);
+    xhr.send(form);
   };
 
   const createFolder = async () => {

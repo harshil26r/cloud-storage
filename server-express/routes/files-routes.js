@@ -2,10 +2,26 @@ import { Router } from "express";
 import { createWriteStream } from "fs";
 import { rename, rm, writeFile } from "fs/promises";
 import path from "path";
+import multer from "multer";
 import filesData from "../filesDB.json" with { type: "json" };
 import directories from "../directoriesDB.json" with { type: "json" };
 
 const fileRouter = Router();
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./storage");
+  },
+  filename: function (req, file, cb) {
+    const id = crypto.randomUUID();
+    const extenstion = path.extname(file.originalname);
+    file.id = id;
+    file.extenstion = extenstion;
+    cb(null, `${id}${extenstion}`);
+  },
+});
+
+const upload = multer({ storage });
 
 fileRouter.get("/:id", (req, res) => {
   try {
@@ -33,73 +49,112 @@ fileRouter.get("/:id", (req, res) => {
   }
 });
 
-fileRouter.post("/{:filename}", (req, res) => {
+fileRouter.post("/", upload.single("file"), async (req, res) => {
+  const parentDirId = req.body.parentDirId;
+  const { id, extenstion, originalname } = req.file;
+
+  if (!parentDirId) {
+    return res.status(400).json({ error: "Parent directory ID is required" });
+  }
+
+  const parentDirData = directories.find(
+    (directory) => directory.id === parentDirId,
+  );
+
+  if (!parentDirData) {
+    return res.status(404).json({ error: "Parent directory not found" });
+  }
+
   try {
-    const filename = req.params.filename?.trim() || "untitled.txt";
-    const parentDirId = req.headers.parentdirid || directories[0]?.id;
-
-    if (!filename) {
-      return res.status(400).json({ error: "Filename is required" });
-    }
-
-    if (!parentDirId) {
-      return res.status(400).json({ error: "Parent directory ID is required" });
-    }
-
-    const parentDirData = directories.find(
-      (directory) => directory.id === parentDirId,
-    );
-
-    if (!parentDirData) {
-      return res.status(404).json({ error: "Parent directory not found" });
-    }
-
-    const extenstion = path.extname(filename);
-    const id = crypto.randomUUID();
+    filesData.push({
+      id,
+      extenstion,
+      name: originalname,
+      parentDirId,
+    });
     parentDirData.files.push(id);
 
-    const writableStream = createWriteStream(`./storage/${id}${extenstion}`);
+    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+    await writeFile(
+      "./directoriesDB.json",
+      JSON.stringify(directories),
+      "utf8",
+    );
 
-    writableStream.on("error", (err) => {
-      console.error(`Stream error for file ${id}:`, err);
-      res.status(500).json({ error: "Failed to write file" });
-    });
-
-    req.on("error", (err) => {
-      console.error(`Request error for file ${id}:`, err);
-      writableStream.destroy();
-      res.status(400).json({ error: "Upload interrupted" });
-    });
-
-    req.pipe(writableStream);
-
-    writableStream.on("finish", async () => {
-      try {
-        filesData.push({
-          id,
-          extenstion,
-          name: filename,
-          parentDirId,
-        });
-
-        await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
-        await writeFile(
-          "./directoriesDB.json",
-          JSON.stringify(directories),
-          "utf8",
-        );
-
-        res.status(201).json({ message: "File uploaded successfully", id });
-      } catch (dbErr) {
-        console.error(`Database error for file ${id}:`, dbErr);
-        res.status(500).json({ error: "Failed to save file metadata" });
-      }
-    });
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ error: error.message || "File upload failed" });
+    res.status(201).json({ message: "File uploaded successfully", id });
+  } catch (dbErr) {
+    console.error(`Database error for file ${id}:`, dbErr);
+    res.status(500).json({ error: "Failed to save file metadata" });
   }
 });
+
+// fileRouter.post("/{:filename}", (req, res) => {
+//   try {
+//     const filename = req.params.filename?.trim() || "untitled.txt";
+//     const parentDirId = req.headers.parentdirid || directories[0]?.id;
+
+//     if (!filename) {
+//       return res.status(400).json({ error: "Filename is required" });
+//     }
+
+//     if (!parentDirId) {
+//       return res.status(400).json({ error: "Parent directory ID is required" });
+//     }
+
+//     const parentDirData = directories.find(
+//       (directory) => directory.id === parentDirId,
+//     );
+
+//     if (!parentDirData) {
+//       return res.status(404).json({ error: "Parent directory not found" });
+//     }
+
+//     const extenstion = path.extname(filename);
+//     const id = crypto.randomUUID();
+//     parentDirData.files.push(id);
+
+//     const writableStream = createWriteStream(`./storage/${id}${extenstion}`);
+
+//     writableStream.on("error", (err) => {
+//       console.error(`Stream error for file ${id}:`, err);
+//       res.status(500).json({ error: "Failed to write file" });
+//     });
+
+//     req.on("error", (err) => {
+//       console.error(`Request error for file ${id}:`, err);
+//       writableStream.destroy();
+//       res.status(400).json({ error: "Upload interrupted" });
+//     });
+
+//     req.pipe(writableStream);
+
+//     writableStream.on("finish", async () => {
+//       try {
+//         filesData.push({
+//           id,
+//           extenstion,
+//           name: filename,
+//           parentDirId,
+//         });
+
+//         await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+//         await writeFile(
+//           "./directoriesDB.json",
+//           JSON.stringify(directories),
+//           "utf8",
+//         );
+
+//         res.status(201).json({ message: "File uploaded successfully", id });
+//       } catch (dbErr) {
+//         console.error(`Database error for file ${id}:`, dbErr);
+//         res.status(500).json({ error: "Failed to save file metadata" });
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Upload error:", error);
+//     res.status(500).json({ error: error.message || "File upload failed" });
+//   }
+// });
 
 fileRouter.patch("/:id", async (req, res) => {
   try {
