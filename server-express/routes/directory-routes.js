@@ -7,80 +7,129 @@ import filesData from "../filesDB.json" with { type: "json" };
 const dirRouter = Router();
 
 dirRouter.get("/{:id}", async (req, res) => {
-  const id = req.params.id || directoriesData[0].id;
+  try {
+    const id = req.params.id || directoriesData[0]?.id;
 
-  const directoryData = directoriesData?.find(
-    (directory) => directory.id === id,
-  );
+    if (!id) {
+      return res.status(400).json({ error: "No directory ID provided" });
+    }
 
-  const files = directoryData.files.map((fileId) =>
-    filesData.find((file) => file.id === fileId),
-  );
-  const directories = directoryData.directories.map((directoryId) =>
-    directoriesData.find((directory) => directory.id === directoryId),
-  );
+    const directoryData = directoriesData?.find(
+      (directory) => directory.id === id,
+    );
 
-  if (directoryData) {
-    res.status(200).send({ ...directoryData, files, directories });
+    if (!directoryData) {
+      return res.status(404).json({ error: "Directory not found" });
+    }
+
+    const files = directoryData.files.map((fileId) =>
+      filesData.find((file) => file.id === fileId),
+    );
+    const directories = directoryData.directories.map((directoryId) =>
+      directoriesData.find((directory) => directory.id === directoryId),
+    );
+
+    res.status(200).json({ ...directoryData, files, directories });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 dirRouter.post("/{:parentDirId}", async (req, res) => {
-  const parentDirId = req.params.parentDirId || directoriesData[0].id;
-  const dirName = req.body.dirName;
-
-  const id = crypto.randomUUID();
-
-  const parentDirData = directoriesData
-    .find((directory) => directory.id === parentDirId)
-    .directories.push(id);
-
-  directoriesData.push({
-    id,
-    name: dirName,
-    parentDirId,
-    files: [],
-    directories: [],
-  });
-
   try {
+    const parentDirId = req.params.parentDirId || directoriesData[0]?.id;
+    const dirName = req.body.dirName?.trim();
+
+    if (!parentDirId) {
+      return res.status(400).json({ error: "No parent directory ID provided" });
+    }
+
+    if (!dirName) {
+      return res.status(400).json({ error: "Directory name is required" });
+    }
+
+    // Verify parent directory exists
+    const parentDir = directoriesData.find(
+      (directory) => directory.id === parentDirId,
+    );
+
+    if (!parentDir) {
+      return res.status(404).json({ error: "Parent directory not found" });
+    }
+
+    const id = crypto.randomUUID();
+
+    parentDir.directories.push(id);
+
+    directoriesData.push({
+      id,
+      name: dirName,
+      parentDirId,
+      files: [],
+      directories: [],
+    });
+
     await writeFile(
       "./directoriesDB.json",
       JSON.stringify(directoriesData),
       "utf8",
     );
-    res.json({ message: "Directory Created!" });
+    res.status(201).json({ message: "Directory created successfully", id });
   } catch (err) {
-    res.json({ err: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
 dirRouter.patch("/:id", async (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
+    const newName = req.body.newName?.trim();
 
-  const directoryData = directoriesData?.find(
-    (directory) => directory.id === id,
-  );
+    if (!id) {
+      return res.status(400).json({ error: "Directory ID is required" });
+    }
 
-  if (directoryData) {
-    directoryData.name = req.body.newName;
+    if (!newName) {
+      return res.status(400).json({ error: "New directory name is required" });
+    }
+
+    const directoryData = directoriesData?.find(
+      (directory) => directory.id === id,
+    );
+
+    if (!directoryData) {
+      return res.status(404).json({ error: "Directory not found" });
+    }
+
+    directoryData.name = newName;
     await writeFile(
       "./directoriesDB.json",
       JSON.stringify(directoriesData),
       "utf8",
     );
-    res.status(200).send({ message: "Folder Renamed" });
+    res.status(200).json({ message: "Directory renamed successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 dirRouter.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-
   try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Directory ID is required" });
+    }
+
     const dirInfo = directoriesData.find((dir) => dir.id === id);
 
     if (!dirInfo) {
-      return res.status(404).json({ message: "Directory not found" });
+      return res.status(404).json({ error: "Directory not found" });
+    }
+
+    // Prevent deletion of root directory
+    if (!dirInfo.parentDirId) {
+      return res.status(403).json({ error: "Cannot delete root directory" });
     }
 
     const dirMap = new Map(directoriesData.map((dir) => [dir.id, dir]));
@@ -128,18 +177,22 @@ dirRouter.delete("/:id", async (req, res) => {
     // remove physical files
     await Promise.all(
       filesToDelete.map((file) =>
-        rm(`./storage/${file.id}${file.extenstion}`, { force: true }),
+        rm(`./storage/${file.id}${file.extenstion}`, { force: true }).catch(
+          (err) => console.error(`Failed to delete file ${file.id}:`, err),
+        ),
       ),
     );
 
     // save db
     await writeFile("./filesDB.json", JSON.stringify(newFilesData), "utf8");
-
     await writeFile("./directoriesDB.json", JSON.stringify(newDirData), "utf8");
 
-    res.json({ message: "Folder deleted successfully" });
+    res.status(200).json({
+      message: "Directory deleted successfully",
+      deletedCount: idsToDelete.size,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

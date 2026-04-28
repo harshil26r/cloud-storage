@@ -8,79 +8,163 @@ import directories from "../directoriesDB.json" with { type: "json" };
 const fileRouter = Router();
 
 fileRouter.get("/:id", (req, res) => {
-  const { id } = req.params;
-  const fileInfo = filesData.find((file) => file.id === id);
-  if (req.query.action === "download") {
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${fileInfo.name}"`,
-    );
-  }
-  if (fileInfo) {
-    res.sendFile(
-      `${process.cwd()}/storage/${id}${fileInfo.extenstion}`,
-      (err) => err && res.send({ message: `${err}` }),
-    );
-    // res.status(200).send({ message: "file is find" });
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "File ID is required" });
+    }
+
+    const fileInfo = filesData.find((file) => file.id === id);
+    if (!fileInfo) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    if (req.query.action === "download") {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileInfo.name}"`,
+      );
+    }
+
+    res.sendFile(`${process.cwd()}/storage/${id}${fileInfo.extenstion}`);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-fileRouter.post("/:filename", (req, res) => {
-  const { filename } = req.params;
-  const parentDirId = req.headers.parentdirid || directories[0].id;
+fileRouter.post("/{:filename}", (req, res) => {
+  try {
+    const filename = req.params.filename?.trim() || "untitled.txt";
+    const parentDirId = req.headers.parentdirid || directories[0]?.id;
 
-  const parentDirData = directories.find(
-    (directory) => directory.id === parentDirId,
-  );
+    if (!filename) {
+      return res.status(400).json({ error: "Filename is required" });
+    }
 
-  const extenstion = path.extname(filename);
-  const id = crypto.randomUUID();
-  parentDirData.files.push(id);
+    if (!parentDirId) {
+      return res.status(400).json({ error: "Parent directory ID is required" });
+    }
 
-  const writableStream = createWriteStream(`./storage/${id}${extenstion}`);
-
-  req.pipe(writableStream);
-  req.on("end", async () => {
-    filesData.push({
-      id,
-      extenstion,
-      name: filename,
-      parentDirId,
-    });
-
-    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
-    await writeFile(
-      "./directoriesDB.json",
-      JSON.stringify(directories),
-      "utf8",
+    const parentDirData = directories.find(
+      (directory) => directory.id === parentDirId,
     );
 
-    res.json({ message: "File Uploaded" });
-  });
+    if (!parentDirData) {
+      return res.status(404).json({ error: "Parent directory not found" });
+    }
+
+    const extenstion = path.extname(filename);
+    const id = crypto.randomUUID();
+    parentDirData.files.push(id);
+
+    const writableStream = createWriteStream(`./storage/${id}${extenstion}`);
+
+    writableStream.on("error", (err) => {
+      console.error(`Stream error for file ${id}:`, err);
+      res.status(500).json({ error: "Failed to write file" });
+    });
+
+    req.on("error", (err) => {
+      console.error(`Request error for file ${id}:`, err);
+      writableStream.destroy();
+      res.status(400).json({ error: "Upload interrupted" });
+    });
+
+    req.pipe(writableStream);
+
+    writableStream.on("finish", async () => {
+      try {
+        filesData.push({
+          id,
+          extenstion,
+          name: filename,
+          parentDirId,
+        });
+
+        await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+        await writeFile(
+          "./directoriesDB.json",
+          JSON.stringify(directories),
+          "utf8",
+        );
+
+        res.status(201).json({ message: "File uploaded successfully", id });
+      } catch (dbErr) {
+        console.error(`Database error for file ${id}:`, dbErr);
+        res.status(500).json({ error: "Failed to save file metadata" });
+      }
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: error.message || "File upload failed" });
+  }
 });
 
 fileRouter.patch("/:id", async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
+    const newName = req.body.newName?.trim();
 
-  const fileInfo = filesData?.find((file) => file?.id === id);
-  fileInfo.name = `${req.body.newName}${fileInfo.extenstion}`;
-  await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+    if (!id) {
+      return res.status(400).json({ error: "File ID is required" });
+    }
 
-  res.json({ message: "File renamed" });
+    if (!newName) {
+      return res.status(400).json({ error: "New filename is required" });
+    }
+
+    const fileInfo = filesData?.find((file) => file?.id === id);
+
+    if (!fileInfo) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    fileInfo.name = `${newName}${fileInfo.extenstion}`;
+    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+
+    res.status(200).json({ message: "File renamed successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 fileRouter.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-  const fileIndex = filesData?.findIndex((file) => file.id === id);
-  const fileInfo = filesData[fileIndex];
-  const parentDirData = directories.find(
-    (directory) => fileInfo.parentDirId === directory.id,
-  );
-
   try {
-    await rm(`./storage/${id}${fileInfo?.extenstion}`);
-    filesData?.splice(fileIndex, 1);
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "File ID is required" });
+    }
+
+    const fileIndex = filesData?.findIndex((file) => file.id === id);
+
+    if (fileIndex === -1 || fileIndex === undefined) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const fileInfo = filesData[fileIndex];
+
+    if (!fileInfo) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const parentDirData = directories.find(
+      (directory) => fileInfo.parentDirId === directory.id,
+    );
+
+    if (!parentDirData) {
+      return res.status(404).json({ error: "Parent directory not found" });
+    }
+
+    // Remove physical file
+    await rm(`./storage/${id}${fileInfo.extenstion}`, { force: true }).catch(
+      (err) => console.error(`Failed to delete physical file ${id}:`, err),
+    );
+
+    filesData.splice(fileIndex, 1);
     parentDirData.files = parentDirData.files.filter((file) => file !== id);
+
     await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
     await writeFile(
       "./directoriesDB.json",
@@ -88,9 +172,10 @@ fileRouter.delete("/:id", async (req, res) => {
       "utf8",
     );
 
-    res.json({ message: "File deleted successfully" });
+    res.status(200).json({ message: "File deleted successfully" });
   } catch (err) {
-    res.status(401).json({ message: err.message });
+    console.error("Delete error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 

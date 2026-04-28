@@ -1,5 +1,5 @@
 import express from "express";
-import cors from 'cors'
+import cors from "cors";
 import dirRouter from "./routes/directory-routes.js";
 import fileRouter from "./routes/files-routes.js";
 // import jsonServer from 'json-server'
@@ -9,8 +9,7 @@ const port = 4000;
 const app = express();
 
 app.use(express.json()); // parse body for all request
-app.use(cors())
-
+app.use(cors());
 
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -21,10 +20,15 @@ app.use((req, res, next) => {
 });
 
 // Directory routes
-app.use('/directory', dirRouter)
+app.use("/directory", dirRouter);
 
 // File routes
-app.use('/file', fileRouter)
+app.use("/file", fileRouter);
+
+// Globle Error Handler
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({ message: "Something went wrong!" });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

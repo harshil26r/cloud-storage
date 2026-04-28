@@ -1,1 +1,44 @@
-[{"id":"2532ee8f-4ebc-4046-b5fe-883d1322f6ee","extenstion":".jpg","name":"photo11.jpg","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"},{"id":"b8bca9d2-d408-4db3-800f-6c783c648cca","extenstion":".jpg","name":"photo22.jpg","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"},{"id":"5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af","extenstion":".jpg","name":"IMG_3443.jpg","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"},{"id":"004b9690-59ea-49ff-8342-783ed8e31022","extenstion":".jpg","name":"IMG_3443.jpg","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"},{"id":"98f9f5a1-43e9-4516-88a2-7bb0b56ba8ce","extenstion":".jpg","name":"IMG_3443.jpg","parentDirId":"62e2af15-36fc-4415-9ceb-b6c42e944ab5"}]
+[
+  {
+    "id": "a39a5bc6-a246-429c-bed1-8b904565aa5a",
+    "extenstion": ".pdf",
+    "name": "HARSHIL PIPALIYA.pdf",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "fad20c50-60ba-4dae-8c69-3cfd4e09f3bf",
+    "extenstion": ".jpg",
+    "name": "IMG_3443.jpg",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "aaa98f62-75bc-436d-8bf6-ac71da838296",
+    "extenstion": ".png",
+    "name": "screenshot-2026-03-22_01-11-27.png",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "9003e6ec-558d-4771-bcf6-25d7759eafe2",
+    "extenstion": ".png",
+    "name": "resume.png",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "fac87c46-510d-4d16-9b58-7231f709fc75",
+    "extenstion": ".mp4",
+    "name": "3D Ring Studio _ Diamonds Direct.mp4",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd"
+  },
+  {
+    "id": "f63ef130-0dc2-4c35-b90e-39ec6524146b",
+    "extenstion": ".pdf",
+    "name": "jdFrontEndDeveloper.pdf",
+    "parentDirId": "e4cbbb06-17fc-4240-abfd-0e57419efe41"
+  },
+  {
+    "id": "72fff4cd-9791-4146-b78f-a23ddfd8d335",
+    "extenstion": ".pdf",
+    "name": "ApplePay Integration Guide (1).pdf",
+    "parentDirId": "faa30fca-680b-4a24-9eee-8713b5335a1d"
+  }
+]

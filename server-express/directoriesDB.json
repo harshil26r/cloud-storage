@@ -1,1 +1,39 @@
-[{"id":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","name":"root","parentDirId":null,"files":["2532ee8f-4ebc-4046-b5fe-883d1322f6ee","b8bca9d2-d408-4db3-800f-6c783c648cca","5698f794-cd3a-4b0a-9fc0-1ae1f7e1c9af","004b9690-59ea-49ff-8342-783ed8e31022"],"directories":["62e2af15-36fc-4415-9ceb-b6c42e944ab5","3b028a74-3d8b-43e5-9a84-8aaf85df9340"]},{"id":"76da53e7-c9ad-447e-96a2-9d69f82c7a55","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":[],"directories":[]},{"id":"62e2af15-36fc-4415-9ceb-b6c42e944ab5","name":"Anime","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":["98f9f5a1-43e9-4516-88a2-7bb0b56ba8ce"],"directories":[]},{"id":"3b028a74-3d8b-43e5-9a84-8aaf85df9340","name":"Movies","parentDirId":"9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd","files":[],"directories":[]}]
+[
+  {
+    "id": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd",
+    "name": "root",
+    "parentDirId": null,
+    "files": [
+      "a39a5bc6-a246-429c-bed1-8b904565aa5a",
+      "fad20c50-60ba-4dae-8c69-3cfd4e09f3bf",
+      "aaa98f62-75bc-436d-8bf6-ac71da838296",
+      "9003e6ec-558d-4771-bcf6-25d7759eafe2",
+      "fac87c46-510d-4d16-9b58-7231f709fc75"
+    ],
+    "directories": ["e4cbbb06-17fc-4240-abfd-0e57419efe41"]
+  },
+  {
+    "id": "e4cbbb06-17fc-4240-abfd-0e57419efe41",
+    "name": "Anime",
+    "parentDirId": "9a1c8690-24d8-421f-a6cc-67d2e4bc5bdd",
+    "files": ["f63ef130-0dc2-4c35-b90e-39ec6524146b"],
+    "directories": [
+      "cc07f34a-8fa5-48c7-ac09-4bb28480bbcc",
+      "faa30fca-680b-4a24-9eee-8713b5335a1d"
+    ]
+  },
+  {
+    "id": "cc07f34a-8fa5-48c7-ac09-4bb28480bbcc",
+    "name": "Naruto",
+    "parentDirId": "e4cbbb06-17fc-4240-abfd-0e57419efe41",
+    "files": [],
+    "directories": []
+  },
+  {
+    "id": "faa30fca-680b-4a24-9eee-8713b5335a1d",
+    "name": "JJK",
+    "parentDirId": "e4cbbb06-17fc-4240-abfd-0e57419efe41",
+    "files": ["72fff4cd-9791-4146-b78f-a23ddfd8d335"],
+    "directories": []
+  }
+]
