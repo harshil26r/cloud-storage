@@ -3,12 +3,15 @@ import { readdir, rm, writeFile } from "fs/promises";
 import mime from "mime";
 import directoriesData from "../directoriesDB.json" with { type: "json" };
 import filesData from "../filesDB.json" with { type: "json" };
+import usersData from "../usersDB.json" with { type: "json" };
 
 const dirRouter = Router();
 
 dirRouter.get("/{:id}", async (req, res) => {
   try {
-    const id = req.params.id || directoriesData[0]?.id;
+    const { user } = req;
+
+    const id = req.params.id || user.rootDirId;
 
     if (!id) {
       return res.status(400).json({ error: "No directory ID provided" });
@@ -37,7 +40,9 @@ dirRouter.get("/{:id}", async (req, res) => {
 
 dirRouter.post("/{:parentDirId}", async (req, res) => {
   try {
-    const parentDirId = req.params.parentDirId || directoriesData[0]?.id;
+    const { user } = req;
+
+    const parentDirId = req.params.parentDirId || user.rootDirId;
     const dirName = req.body.dirName?.trim();
 
     if (!parentDirId) {

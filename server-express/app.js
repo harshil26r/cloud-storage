@@ -2,17 +2,23 @@ import express from "express";
 import cors from "cors";
 import dirRouter from "./routes/directory-routes.js";
 import fileRouter from "./routes/files-routes.js";
-// import jsonServer from 'json-server'
-// import path from "path"
+import authRouter from "./routes/auth-routes.js";
+import cookieParser from "cookie-parser";
+import isLogin from "./middleware/isLogin.js";
 
 const port = 4000;
 const app = express();
 
 app.use(express.json()); // parse body for all request
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 
 app.use((req, res, next) => {
-  res.set("Access-Control-Allow-Origin", "*");
   if (req.query.action === "download") {
     res.set("Content-Disposition", `attachment;`);
   }
@@ -20,17 +26,20 @@ app.use((req, res, next) => {
 });
 
 // Directory routes
-app.use("/directory", dirRouter);
+app.use("/directory", isLogin, dirRouter);
 
 // File routes
-app.use("/file", fileRouter);
+app.use("/file", isLogin, fileRouter);
+
+// Auth routes
+app.use("/auth", authRouter);
 
 // Globle Error Handler
-// app.use((err, req, res, next) => {
-//   res
-//     .status(err.status || 500)
-//     .json({ message: `Something went wrong! ${err}` });
-// });
+app.use((err, req, res, next) => {
+  res
+    .status(err.status || 500)
+    .json({ message: `Something went wrong! ${err}` });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

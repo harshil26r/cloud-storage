@@ -175,7 +175,7 @@ fileRouter.patch("/:id", async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
-    fileInfo.name = `${newName}${fileInfo.extenstion}`;
+    fileInfo.name = `${newName}`;
     await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
 
     res.status(200).json({ message: "File renamed successfully" });
