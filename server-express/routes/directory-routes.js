@@ -1,20 +1,20 @@
-import { Router } from "express";
-import { readdir, rm, writeFile } from "fs/promises";
-import mime from "mime";
-import directoriesData from "../directoriesDB.json" with { type: "json" };
-import filesData from "../filesDB.json" with { type: "json" };
-import usersData from "../usersDB.json" with { type: "json" };
+import { Router } from 'express';
+import { readdir, rm, writeFile } from 'fs/promises';
+import mime from 'mime';
+import directoriesData from '../directoriesDB.json' with { type: 'json' };
+import filesData from '../filesDB.json' with { type: 'json' };
+import usersData from '../usersDB.json' with { type: 'json' };
 
 const dirRouter = Router();
 
-dirRouter.get("/{:id}", async (req, res) => {
+dirRouter.get('/{:id}', async (req, res) => {
   try {
     const { user } = req;
 
     const id = req.params.id || user.rootDirId;
 
     if (!id) {
-      return res.status(400).json({ error: "No directory ID provided" });
+      return res.status(400).json({ error: 'No directory ID provided' });
     }
 
     const directoryData = directoriesData?.find(
@@ -24,7 +24,7 @@ dirRouter.get("/{:id}", async (req, res) => {
     if (!directoryData) {
       return res
         .status(404)
-        .json({ error: "Directory not found for this user" });
+        .json({ error: 'Directory not found for this user' });
     }
 
     const files = directoryData.files.map((fileId) =>
@@ -40,7 +40,7 @@ dirRouter.get("/{:id}", async (req, res) => {
   }
 });
 
-dirRouter.post("/{:parentDirId}", async (req, res) => {
+dirRouter.post('/{:parentDirId}', async (req, res) => {
   try {
     const { user } = req;
 
@@ -48,11 +48,11 @@ dirRouter.post("/{:parentDirId}", async (req, res) => {
     const dirName = req.body.dirName?.trim();
 
     if (!parentDirId) {
-      return res.status(400).json({ error: "No parent directory ID provided" });
+      return res.status(400).json({ error: 'No parent directory ID provided' });
     }
 
     if (!dirName) {
-      return res.status(400).json({ error: "Directory name is required" });
+      return res.status(400).json({ error: 'Directory name is required' });
     }
 
     // Verify parent directory exists
@@ -61,7 +61,7 @@ dirRouter.post("/{:parentDirId}", async (req, res) => {
     );
 
     if (!parentDir) {
-      return res.status(404).json({ error: "Parent directory not found" });
+      return res.status(404).json({ error: 'Parent directory not found' });
     }
 
     const id = crypto.randomUUID();
@@ -78,27 +78,27 @@ dirRouter.post("/{:parentDirId}", async (req, res) => {
     });
 
     await writeFile(
-      "./directoriesDB.json",
+      './directoriesDB.json',
       JSON.stringify(directoriesData),
-      "utf8",
+      'utf8',
     );
-    res.status(201).json({ message: "Directory created successfully", id });
+    res.status(201).json({ message: 'Directory created successfully', id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-dirRouter.patch("/:id", async (req, res) => {
+dirRouter.patch('/:id', async (req, res) => {
   try {
     const id = req.params.id;
     const newName = req.body.newName?.trim();
 
     if (!id) {
-      return res.status(400).json({ error: "Directory ID is required" });
+      return res.status(400).json({ error: 'Directory ID is required' });
     }
 
     if (!newName) {
-      return res.status(400).json({ error: "New directory name is required" });
+      return res.status(400).json({ error: 'New directory name is required' });
     }
 
     const directoryData = directoriesData?.find(
@@ -108,27 +108,27 @@ dirRouter.patch("/:id", async (req, res) => {
     if (!directoryData) {
       return res
         .status(404)
-        .json({ error: "Directory not found for this user!" });
+        .json({ error: 'Directory not found for this user!' });
     }
 
     directoryData.name = newName;
     await writeFile(
-      "./directoriesDB.json",
+      './directoriesDB.json',
       JSON.stringify(directoriesData),
-      "utf8",
+      'utf8',
     );
-    res.status(200).json({ message: "Directory renamed successfully" });
+    res.status(200).json({ message: 'Directory renamed successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-dirRouter.delete("/:id", async (req, res) => {
+dirRouter.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ error: "Directory ID is required" });
+      return res.status(400).json({ error: 'Directory ID is required' });
     }
 
     const dirInfo = directoriesData.find(
@@ -138,12 +138,12 @@ dirRouter.delete("/:id", async (req, res) => {
     if (!dirInfo) {
       return res
         .status(404)
-        .json({ error: "Directory not found for this user!" });
+        .json({ error: 'Directory not found for this user!' });
     }
 
     // Prevent deletion of root directory
     if (!dirInfo.parentDirId) {
-      return res.status(403).json({ error: "Cannot delete root directory" });
+      return res.status(403).json({ error: 'Cannot delete root directory' });
     }
 
     const dirMap = new Map(directoriesData.map((dir) => [dir.id, dir]));
@@ -198,11 +198,11 @@ dirRouter.delete("/:id", async (req, res) => {
     );
 
     // save db
-    await writeFile("./filesDB.json", JSON.stringify(newFilesData), "utf8");
-    await writeFile("./directoriesDB.json", JSON.stringify(newDirData), "utf8");
+    await writeFile('./filesDB.json', JSON.stringify(newFilesData), 'utf8');
+    await writeFile('./directoriesDB.json', JSON.stringify(newDirData), 'utf8');
 
     res.status(200).json({
-      message: "Directory deleted successfully",
+      message: 'Directory deleted successfully',
       deletedCount: idsToDelete.size,
     });
   } catch (err) {

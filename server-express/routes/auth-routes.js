@@ -1,35 +1,35 @@
-import { Router } from "express";
-import { writeFile } from "fs/promises";
+import { Router } from 'express';
+import { writeFile } from 'fs/promises';
 
-import usersData from "../usersDB.json" with { type: "json" };
-import directoriesData from "../directoriesDB.json" with { type: "json" };
+import usersData from '../usersDB.json' with { type: 'json' };
+import directoriesData from '../directoriesDB.json' with { type: 'json' };
 
 const authRouter = Router();
 
-authRouter.post("/login", (req, res) => {
+authRouter.post('/login', (req, res) => {
   const { email, password } = req.body;
 
   const user = usersData.find(
     (user) => user.email === email && user.password === password,
   );
   if (!user) {
-    return res.status(404).json({ message: "Invalide Credentials" });
+    return res.status(404).json({ message: 'Invalide Credentials' });
   }
-  res.cookie("uid", user.id, {
+  res.cookie('uid', user.id, {
     maxAge: 60 * 1000 * 60,
     httpOnly: true,
   });
 
-  res.json({ message: "User login Sucessfully" });
+  res.json({ message: 'User login Sucessfully' });
 });
 
-authRouter.post("/signup", async (req, res) => {
+authRouter.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
   const existingUser = usersData.find((user) => user.email === email);
 
   if (existingUser)
-    return res.status(409).json({ message: "Email id already Register!" });
+    return res.status(409).json({ message: 'Email id already Register!' });
 
   const userId = crypto.randomUUID();
   const rootDirId = crypto.randomUUID();
@@ -44,18 +44,18 @@ authRouter.post("/signup", async (req, res) => {
     });
     directoriesData.push({
       id: rootDirId,
-      name: "root",
+      name: 'root',
       parentDirId: null,
       userId,
       files: [],
       directories: [],
     });
 
-    await writeFile("./usersDB.json", JSON.stringify(usersData), "utf8");
+    await writeFile('./usersDB.json', JSON.stringify(usersData), 'utf8');
     await writeFile(
-      "./directoriesDB.json",
+      './directoriesDB.json',
       JSON.stringify(directoriesData),
-      "utf8",
+      'utf8',
     );
 
     res
@@ -64,6 +64,25 @@ authRouter.post("/signup", async (req, res) => {
   } catch (error) {
     res.error({ message: error });
   }
+});
+
+authRouter.post('/logout', (req, res) => {
+  res.clearCookie('uid');
+  res.json({ message: 'User logged out successfully' });
+});
+
+authRouter.get('/user', (req, res) => {
+  const userId = req.cookies.uid;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const user = usersData.find((user) => user.id === userId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  res.json({ email: user.email, username: user.username });
 });
 
 export default authRouter;

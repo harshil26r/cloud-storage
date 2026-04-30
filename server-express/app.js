@@ -1,10 +1,10 @@
-import express from "express";
-import cors from "cors";
-import dirRouter from "./routes/directory-routes.js";
-import fileRouter from "./routes/files-routes.js";
-import authRouter from "./routes/auth-routes.js";
-import cookieParser from "cookie-parser";
-import isLogin from "./middleware/isLogin.js";
+import express from 'express';
+import cors from 'cors';
+import dirRouter from './routes/directory-routes.js';
+import fileRouter from './routes/files-routes.js';
+import authRouter from './routes/auth-routes.js';
+import cookieParser from 'cookie-parser';
+import isLogin from './middleware/isLogin.js';
 
 const port = 4000;
 const app = express();
@@ -12,27 +12,27 @@ const app = express();
 app.use(express.json()); // parse body for all request
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: 'http://localhost:5173',
     credentials: true,
   }),
 );
 app.use(cookieParser());
 
 app.use((req, res, next) => {
-  if (req.query.action === "download") {
-    res.set("Content-Disposition", `attachment;`);
+  if (req.query.action === 'download') {
+    res.set('Content-Disposition', `attachment;`);
   }
-  express.static("storage")(req, res, next); // serve public folder
+  express.static('storage')(req, res, next); // serve public folder
 });
 
 // Directory routes
-app.use("/directory", isLogin, dirRouter);
+app.use('/directory', isLogin, dirRouter);
 
 // File routes
-app.use("/file", isLogin, fileRouter);
+app.use('/file', isLogin, fileRouter);
 
 // Auth routes
-app.use("/auth", authRouter);
+app.use('/auth', authRouter);
 
 // Globle Error Handler
 app.use((err, req, res, next) => {

@@ -1,24 +1,24 @@
-import { Router } from "express";
-import { createWriteStream } from "fs";
-import { rename, rm, writeFile } from "fs/promises";
-import filesData from "../filesDB.json" with { type: "json" };
-import directories from "../directoriesDB.json" with { type: "json" };
-import fileUploadMiddleware from "../middleware/fileUpload.js";
+import { Router } from 'express';
+import { createWriteStream } from 'fs';
+import { rename, rm, writeFile } from 'fs/promises';
+import filesData from '../filesDB.json' with { type: 'json' };
+import directories from '../directoriesDB.json' with { type: 'json' };
+import fileUploadMiddleware from '../middleware/fileUpload.js';
 
 const fileRouter = Router();
 
-fileRouter.get("/:id", (req, res) => {
+fileRouter.get('/:id', (req, res) => {
   try {
     const { user } = req;
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ error: "File ID is required" });
+      return res.status(400).json({ error: 'File ID is required' });
     }
 
     const fileInfo = filesData.find((file) => file.id === id);
     if (!fileInfo) {
-      return res.status(404).json({ error: "File not found" });
+      return res.status(404).json({ error: 'File not found' });
     }
     const parentDir = directories.find(
       (dir) => dir.id === fileInfo.parentDirId,
@@ -29,9 +29,9 @@ fileRouter.get("/:id", (req, res) => {
         .status(401)
         .json({ message: "You don't have permission to preview this file!" });
 
-    if (req.query.action === "download") {
+    if (req.query.action === 'download') {
       res.setHeader(
-        "Content-Disposition",
+        'Content-Disposition',
         `attachment; filename="${fileInfo.name}"`,
       );
     }
@@ -42,12 +42,12 @@ fileRouter.get("/:id", (req, res) => {
   }
 });
 
-fileRouter.post("/", fileUploadMiddleware, async (req, res) => {
+fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
   const parentDirId = req.body.parentDirId;
   const { id, extenstion, originalname } = req.file;
 
   if (!parentDirId) {
-    return res.status(400).json({ error: "Parent directory ID is required" });
+    return res.status(400).json({ error: 'Parent directory ID is required' });
   }
 
   const parentDirData = directories.find(
@@ -55,7 +55,7 @@ fileRouter.post("/", fileUploadMiddleware, async (req, res) => {
   );
 
   if (!parentDirData) {
-    return res.status(404).json({ error: "Parent directory not found" });
+    return res.status(404).json({ error: 'Parent directory not found' });
   }
 
   try {
@@ -67,17 +67,17 @@ fileRouter.post("/", fileUploadMiddleware, async (req, res) => {
     });
     parentDirData.files.push(id);
 
-    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+    await writeFile('./filesDB.json', JSON.stringify(filesData), 'utf8');
     await writeFile(
-      "./directoriesDB.json",
+      './directoriesDB.json',
       JSON.stringify(directories),
-      "utf8",
+      'utf8',
     );
 
-    res.status(201).json({ message: "File uploaded successfully", id });
+    res.status(201).json({ message: 'File uploaded successfully', id });
   } catch (dbErr) {
     console.error(`Database error for file ${id}:`, dbErr);
-    res.status(500).json({ error: "Failed to save file metadata" });
+    res.status(500).json({ error: 'Failed to save file metadata' });
   }
 });
 
@@ -149,7 +149,7 @@ fileRouter.post("/", fileUploadMiddleware, async (req, res) => {
 //   }
 // });
 
-fileRouter.patch("/:id", async (req, res) => {
+fileRouter.patch('/:id', async (req, res) => {
   try {
     const { user } = req;
 
@@ -157,17 +157,17 @@ fileRouter.patch("/:id", async (req, res) => {
     const newName = req.body.newName?.trim();
 
     if (!id) {
-      return res.status(400).json({ error: "File ID is required" });
+      return res.status(400).json({ error: 'File ID is required' });
     }
 
     if (!newName) {
-      return res.status(400).json({ error: "New filename is required" });
+      return res.status(400).json({ error: 'New filename is required' });
     }
 
     const fileInfo = filesData?.find((file) => file?.id === id);
 
     if (!fileInfo) {
-      return res.status(404).json({ error: "File not found" });
+      return res.status(404).json({ error: 'File not found' });
     }
 
     const parentDir = directories.find(
@@ -180,33 +180,33 @@ fileRouter.patch("/:id", async (req, res) => {
         .json({ message: "You don't have permission to perform this action!" });
 
     fileInfo.name = `${newName}`;
-    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+    await writeFile('./filesDB.json', JSON.stringify(filesData), 'utf8');
 
-    res.status(200).json({ message: "File renamed successfully" });
+    res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-fileRouter.delete("/:id", async (req, res) => {
+fileRouter.delete('/:id', async (req, res) => {
   try {
     const { user } = req;
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ error: "File ID is required" });
+      return res.status(400).json({ error: 'File ID is required' });
     }
 
     const fileIndex = filesData?.findIndex((file) => file.id === id);
 
     if (fileIndex === -1 || fileIndex === undefined) {
-      return res.status(404).json({ error: "File not found" });
+      return res.status(404).json({ error: 'File not found' });
     }
 
     const fileInfo = filesData[fileIndex];
 
     if (!fileInfo) {
-      return res.status(404).json({ error: "File not found" });
+      return res.status(404).json({ error: 'File not found' });
     }
 
     const parentDirData = directories.find(
@@ -214,7 +214,7 @@ fileRouter.delete("/:id", async (req, res) => {
     );
 
     if (!parentDirData) {
-      return res.status(404).json({ error: "Parent directory not found" });
+      return res.status(404).json({ error: 'Parent directory not found' });
     }
 
     if (parentDirData.userId !== user.id) {
@@ -231,16 +231,16 @@ fileRouter.delete("/:id", async (req, res) => {
     filesData.splice(fileIndex, 1);
     parentDirData.files = parentDirData.files.filter((file) => file !== id);
 
-    await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
+    await writeFile('./filesDB.json', JSON.stringify(filesData), 'utf8');
     await writeFile(
-      "./directoriesDB.json",
+      './directoriesDB.json',
       JSON.stringify(directories),
-      "utf8",
+      'utf8',
     );
 
-    res.status(200).json({ message: "File deleted successfully" });
+    res.status(200).json({ message: 'File deleted successfully' });
   } catch (err) {
-    console.error("Delete error:", err);
+    console.error('Delete error:', err);
     res.status(500).json({ error: err.message });
   }
 });
