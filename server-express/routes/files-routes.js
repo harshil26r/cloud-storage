@@ -1,30 +1,15 @@
 import { Router } from "express";
 import { createWriteStream } from "fs";
 import { rename, rm, writeFile } from "fs/promises";
-import path from "path";
-import multer from "multer";
 import filesData from "../filesDB.json" with { type: "json" };
 import directories from "../directoriesDB.json" with { type: "json" };
+import fileUploadMiddleware from "../middleware/fileUpload.js";
 
 const fileRouter = Router();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./storage");
-  },
-  filename: function (req, file, cb) {
-    const id = crypto.randomUUID();
-    const extenstion = path.extname(file.originalname);
-    file.id = id;
-    file.extenstion = extenstion;
-    cb(null, `${id}${extenstion}`);
-  },
-});
-
-const upload = multer({ storage });
-
 fileRouter.get("/:id", (req, res) => {
   try {
+    const { user } = req;
     const { id } = req.params;
 
     if (!id) {
@@ -35,6 +20,14 @@ fileRouter.get("/:id", (req, res) => {
     if (!fileInfo) {
       return res.status(404).json({ error: "File not found" });
     }
+    const parentDir = directories.find(
+      (dir) => dir.id === fileInfo.parentDirId,
+    );
+
+    if (parentDir?.userId !== user.id)
+      return res
+        .status(401)
+        .json({ message: "You don't have permission to preview this file!" });
 
     if (req.query.action === "download") {
       res.setHeader(
@@ -49,7 +42,7 @@ fileRouter.get("/:id", (req, res) => {
   }
 });
 
-fileRouter.post("/", upload.single("file"), async (req, res) => {
+fileRouter.post("/", fileUploadMiddleware, async (req, res) => {
   const parentDirId = req.body.parentDirId;
   const { id, extenstion, originalname } = req.file;
 
@@ -158,6 +151,8 @@ fileRouter.post("/", upload.single("file"), async (req, res) => {
 
 fileRouter.patch("/:id", async (req, res) => {
   try {
+    const { user } = req;
+
     const { id } = req.params;
     const newName = req.body.newName?.trim();
 
@@ -175,6 +170,15 @@ fileRouter.patch("/:id", async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
+    const parentDir = directories.find(
+      (dir) => dir.id === fileInfo.parentDirId,
+    );
+
+    if (parentDir?.userId !== user.id)
+      return res
+        .status(401)
+        .json({ message: "You don't have permission to perform this action!" });
+
     fileInfo.name = `${newName}`;
     await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
 
@@ -186,6 +190,7 @@ fileRouter.patch("/:id", async (req, res) => {
 
 fileRouter.delete("/:id", async (req, res) => {
   try {
+    const { user } = req;
     const { id } = req.params;
 
     if (!id) {
@@ -210,6 +215,12 @@ fileRouter.delete("/:id", async (req, res) => {
 
     if (!parentDirData) {
       return res.status(404).json({ error: "Parent directory not found" });
+    }
+
+    if (parentDirData.userId !== user.id) {
+      return res
+        .status(401)
+        .json({ message: "You don't have permission to perform this action!" });
     }
 
     // Remove physical file

@@ -18,11 +18,13 @@ dirRouter.get("/{:id}", async (req, res) => {
     }
 
     const directoryData = directoriesData?.find(
-      (directory) => directory.id === id,
+      (directory) => directory.id === id && directory.userId === user.id,
     );
 
     if (!directoryData) {
-      return res.status(404).json({ error: "Directory not found" });
+      return res
+        .status(404)
+        .json({ error: "Directory not found for this user" });
     }
 
     const files = directoryData.files.map((fileId) =>
@@ -69,6 +71,7 @@ dirRouter.post("/{:parentDirId}", async (req, res) => {
     directoriesData.push({
       id,
       name: dirName,
+      userId: user.id,
       parentDirId,
       files: [],
       directories: [],
@@ -99,11 +102,13 @@ dirRouter.patch("/:id", async (req, res) => {
     }
 
     const directoryData = directoriesData?.find(
-      (directory) => directory.id === id,
+      (directory) => directory.id === id && directory.userId === req.user.id,
     );
 
     if (!directoryData) {
-      return res.status(404).json({ error: "Directory not found" });
+      return res
+        .status(404)
+        .json({ error: "Directory not found for this user!" });
     }
 
     directoryData.name = newName;
@@ -126,10 +131,14 @@ dirRouter.delete("/:id", async (req, res) => {
       return res.status(400).json({ error: "Directory ID is required" });
     }
 
-    const dirInfo = directoriesData.find((dir) => dir.id === id);
+    const dirInfo = directoriesData.find(
+      (dir) => dir.id === id && dir.userId === req.user.id,
+    );
 
     if (!dirInfo) {
-      return res.status(404).json({ error: "Directory not found" });
+      return res
+        .status(404)
+        .json({ error: "Directory not found for this user!" });
     }
 
     // Prevent deletion of root directory

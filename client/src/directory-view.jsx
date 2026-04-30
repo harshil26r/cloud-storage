@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
-const BASE_URL = "http://localhost:4000/";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function DirectoryView() {
   const [fileList, setFileList] = useState([]);
   const [directoryList, setDirectoryList] = useState([]);
-  const [newFileName, setNewFileName] = useState();
+  const [newFileName, setNewFileName] = useState("");
   const [currentDir, setCurrentDir] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [renamingItem, setRenamingItem] = useState(null);
   const navigate = useNavigate();
 
   let { directoryId } = useParams();
@@ -23,33 +24,47 @@ function DirectoryView() {
       `${BASE_URL}${isFile ? "file" : "directory"}/${id}`,
       {
         method: "DELETE",
+        credentials: "include",
       },
     );
     const data = await response.text();
     getAllFiles();
   };
 
-  const handleRename = (oldFileName) => {
+  const handleRename = (oldFileName, id, isFile) => {
     setNewFileName(oldFileName);
+    setRenamingItem({ id, isFile });
   };
 
-  const handleSaveFileName = async (oldFileName, id, isFile) => {
-    setNewFileName(oldFileName);
+  const handleSaveFileName = async () => {
+    if (!renamingItem || !newFileName.trim()) {
+      alert("Please enter a valid name");
+      return;
+    }
 
-    const newFile = `${newFileName.split(".")[0]}`;
-    const response = await fetch(
-      `${BASE_URL}${isFile ? "file" : "directory"}/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+    const { id, isFile } = renamingItem;
+    const newFile = `${newFileName.trim()}`;
+
+    try {
+      const response = await fetch(
+        `${BASE_URL}${isFile ? "file" : "directory"}/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ newName: newFile }),
+          credentials: "include",
         },
-        body: JSON.stringify({ newName: newFile }),
-      },
-    );
-    const data = await response.json();
-    setNewFileName("");
-    getAllFiles(directoryId);
+      );
+      const data = await response.json();
+      setNewFileName("");
+      setRenamingItem(null);
+      getAllFiles(directoryId);
+    } catch (error) {
+      console.error("Error renaming:", error);
+      alert("Error renaming item");
+    }
   };
 
   const getAllFiles = async () => {
@@ -57,6 +72,7 @@ function DirectoryView() {
       `${BASE_URL}directory/${directoryId ? directoryId : ""}`,
       {
         method: "GET",
+        credentials: "include",
       },
     );
     const result = await response.json();
@@ -77,6 +93,7 @@ function DirectoryView() {
     form.append("parentDirId", directoryId || currentDir?.id);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${BASE_URL}file/`, true);
+    xhr.withCredentials = true;
     xhr.addEventListener("load", () => {
       getAllFiles();
       e.target.value = ""; // Reset input so same file can be selected again
@@ -94,15 +111,19 @@ function DirectoryView() {
       return;
     }
     try {
-      const response = await fetch(`${BASE_URL}directory/${directoryId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${BASE_URL}directory/${directoryId || currentDir?.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            dirName: newFolderName,
+          }),
+          credentials: "include",
         },
-        body: JSON.stringify({
-          dirName: newFolderName,
-        }),
-      });
+      );
       const data = await response.json();
       setNewFolderName("");
       setShowCreateFolder(false);
@@ -247,18 +268,36 @@ function DirectoryView() {
         )}
 
         {/* Rename Input */}
-        {newFileName && (
+        {renamingItem && (
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Rename
             </label>
-            <input
-              type="text"
-              onChange={(e) => setNewFileName(e.target.value)}
-              value={newFileName}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter new file name"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                onChange={(e) => setNewFileName(e.target.value)}
+                value={newFileName}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter new name"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveFileName}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setNewFileName("");
+                  setRenamingItem(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
@@ -362,7 +401,9 @@ function DirectoryView() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleRename(item?.name)}
+                            onClick={() =>
+                              handleRename(item?.name, item?.id, false)
+                            }
                             className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors"
                             title="Rename"
                           >
@@ -483,7 +524,9 @@ function DirectoryView() {
                             </svg>
                           </a>
                           <button
-                            onClick={() => handleRename(item?.name)}
+                            onClick={() =>
+                              handleRename(item?.name, item?.id, true)
+                            }
                             className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors"
                             title="Rename"
                           >
@@ -561,7 +604,7 @@ function DirectoryView() {
                       Open
                     </button>
                     <button
-                      onClick={() => handleRename(item?.name)}
+                      onClick={() => handleRename(item?.name, item?.id, false)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                     >
                       Rename
@@ -618,7 +661,7 @@ function DirectoryView() {
                       Download
                     </a>
                     <button
-                      onClick={() => handleRename(item?.name)}
+                      onClick={() => handleRename(item?.name, item?.id, true)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                     >
                       Rename
