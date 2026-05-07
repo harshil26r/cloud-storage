@@ -24,8 +24,6 @@ dirRouter.get('/{:id}', async (req, res) => {
       userId: new ObjectId(user._id),
     });
 
-    console.log(directoryData);
-
     if (!directoryData) {
       return res
         .status(404)
@@ -51,9 +49,9 @@ dirRouter.get('/{:id}', async (req, res) => {
 
 dirRouter.post('/{:parentDirId}', async (req, res) => {
   try {
-    const { user } = req;
+    const { user, db } = req;
 
-    const parentDirId = req.params.parentDirId || user.rootDirId;
+    const parentDirId = req.params.parentDirId || user.rootDirId.toString();
     const dirName = req.body.dirName?.trim();
 
     if (!parentDirId) {
@@ -65,32 +63,33 @@ dirRouter.post('/{:parentDirId}', async (req, res) => {
     }
 
     // Verify parent directory exists
-    const parentDir = directoriesData.find(
-      (directory) => directory.id === parentDirId,
-    );
+    const dirCollection = db.collection('directories');
+
+    const parentDir = dirCollection.findOne({ _id: new ObjectId(parentDirId) });
 
     if (!parentDir) {
       return res.status(404).json({ error: 'Parent directory not found' });
     }
 
-    const id = crypto.randomUUID();
+    const id = new ObjectId();
 
-    parentDir.directories.push(id);
+    await dirCollection.updateOne(
+      {
+        _id: new ObjectId(parentDirId),
+        userId: new ObjectId(user._id),
+      },
+      { $push: { directories: id } },
+    );
 
-    directoriesData.push({
-      id,
+    dirCollection.insertOne({
+      _id: id,
       name: dirName,
-      userId: user.id,
+      userId: user._id,
       parentDirId,
       files: [],
       directories: [],
     });
 
-    await writeFile(
-      './directoriesDB.json',
-      JSON.stringify(directoriesData),
-      'utf8',
-    );
     res.status(201).json({ message: 'Directory created successfully', id });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -99,6 +98,7 @@ dirRouter.post('/{:parentDirId}', async (req, res) => {
 
 dirRouter.patch('/:id', async (req, res) => {
   try {
+    const { db } = req;
     const id = req.params.id;
     const newName = req.body.newName?.trim();
 
@@ -109,10 +109,11 @@ dirRouter.patch('/:id', async (req, res) => {
     if (!newName) {
       return res.status(400).json({ error: 'New directory name is required' });
     }
-
-    const directoryData = directoriesData?.find(
-      (directory) => directory.id === id && directory.userId === req.user.id,
-    );
+    const dirCollection = db.collection('directories');
+    const directoryData = await dirCollection.findOne({
+      _id: new ObjectId(id),
+      userId: new ObjectId(user._id),
+    });
 
     if (!directoryData) {
       return res
@@ -120,12 +121,11 @@ dirRouter.patch('/:id', async (req, res) => {
         .json({ error: 'Directory not found for this user!' });
     }
 
-    directoryData.name = newName;
-    await writeFile(
-      './directoriesDB.json',
-      JSON.stringify(directoriesData),
-      'utf8',
+    await dirCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { name: newName } },
     );
+
     res.status(200).json({ message: 'Directory renamed successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });

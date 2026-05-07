@@ -23,9 +23,9 @@ function DirectoryView() {
 
   let { directoryId } = useParams();
 
-  const handleDelete = async (id, isFile) => {
+  const handleDelete = async (_id, isFile) => {
     const response = await fetch(
-      `${BASE_URL}${isFile ? "file" : "directory"}/${id}`,
+      `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
       {
         method: "DELETE",
         credentials: "include",
@@ -35,9 +35,9 @@ function DirectoryView() {
     getAllFiles();
   };
 
-  const handleRename = (oldFileName, id, isFile) => {
+  const handleRename = (oldFileName, _id, isFile) => {
     setNewFileName(oldFileName);
-    setRenamingItem({ id, isFile });
+    setRenamingItem({ _id, isFile });
   };
 
   const handleSaveFileName = async () => {
@@ -46,12 +46,12 @@ function DirectoryView() {
       return;
     }
 
-    const { id, isFile } = renamingItem;
+    const { _id, isFile } = renamingItem;
     const newFile = `${newFileName.trim()}`;
 
     try {
       const response = await fetch(
-        `${BASE_URL}${isFile ? "file" : "directory"}/${id}`,
+        `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
         {
           method: "PATCH",
           headers: {
@@ -85,8 +85,8 @@ function DirectoryView() {
     setCurrentDir(result);
   };
 
-  const getUrl = (id, isFile) => {
-    return `${isFile ? `${BASE_URL}file` : "/directory"}/${id}`;
+  const getUrl = (_id, isFile) => {
+    return `${isFile ? `${BASE_URL}file` : "/directory"}/${_id}`;
   };
 
   const uploadFileInCurrentDir = async (e) => {
@@ -115,7 +115,7 @@ function DirectoryView() {
     }
     try {
       const response = await fetch(
-        `${BASE_URL}directory/${directoryId || currentDir?.id}`,
+        `${BASE_URL}directory/${directoryId || currentDir?._id}`,
         {
           method: "POST",
           headers: {
@@ -212,7 +212,7 @@ function DirectoryView() {
 
         <RenameDialog
           isOpen={!!renamingItem}
-          itemName={renamingItem?.id}
+          itemName={renamingItem?._id}
           name={newFileName}
           onNameChange={setNewFileName}
           onSave={handleSaveFileName}
@@ -253,11 +253,11 @@ function DirectoryView() {
                         key={`dir-${index}`}
                         item={item}
                         viewMode="list"
-                        onOpen={() => navigate(getUrl(item?.id, false))}
+                        onOpen={() => navigate(getUrl(item?._id, false))}
                         onRename={() =>
-                          handleRename(item?.name, item?.id, false)
+                          handleRename(item?.name, item?._id, false)
                         }
-                        onDelete={() => handleDelete(item?.id, false)}
+                        onDelete={() => handleDelete(item?._id, false)}
                       />
                     ))}
                     {fileList?.map((item, index) => (
@@ -266,16 +266,16 @@ function DirectoryView() {
                         item={item}
                         viewMode="list"
                         onOpen={() =>
-                          window.open(getUrl(item?.id, true) + "?action=open")
+                          window.open(getUrl(item?._id, true) + "?action=open")
                         }
                         onDownload={() =>
                           (window.location.href =
-                            getUrl(item?.id, true) + "?action=download")
+                            getUrl(item?._id, true) + "?action=download")
                         }
                         onRename={() =>
-                          handleRename(item?.name, item?.id, true)
+                          handleRename(item?.name, item?._id, true)
                         }
-                        onDelete={() => handleDelete(item?.id, true)}
+                        onDelete={() => handleDelete(item?._id, true)}
                       />
                     ))}
                   </tbody>
@@ -291,9 +291,9 @@ function DirectoryView() {
                     key={`dir-grid-${index}`}
                     item={item}
                     viewMode="grid"
-                    onOpen={() => navigate(getUrl(item?.id, false))}
-                    onRename={() => handleRename(item?.name, item?.id, false)}
-                    onDelete={() => handleDelete(item?.id, false)}
+                    onOpen={() => navigate(getUrl(item?._id, false))}
+                    onRename={() => handleRename(item?.name, item?._id, false)}
+                    onDelete={() => handleDelete(item?._id, false)}
                   />
                 ))}
                 {fileList?.map((item, index) => (
@@ -302,14 +302,14 @@ function DirectoryView() {
                     item={item}
                     viewMode="grid"
                     onOpen={() =>
-                      window.open(getUrl(item?.id, true) + "?action=open")
+                      window.open(getUrl(item?._id, true) + "?action=open")
                     }
                     onDownload={() =>
                       (window.location.href =
-                        getUrl(item?.id, true) + "?action=download")
+                        getUrl(item?._id, true) + "?action=download")
                     }
-                    onRename={() => handleRename(item?.name, item?.id, true)}
-                    onDelete={() => handleDelete(item?.id, true)}
+                    onRename={() => handleRename(item?.name, item?._id, true)}
+                    onDelete={() => handleDelete(item?._id, true)}
                   />
                 ))}
               </div>
@@ -321,7 +321,7 @@ function DirectoryView() {
                 <div
                   key={`dir-mobile-${index}`}
                   className="bg-white border border-gray-200 rounded-lg p-4"
-                  onDoubleClick={() => navigate(getUrl(item?.id, false))}
+                  onDoubleClick={() => navigate(getUrl(item?._id, false))}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -342,19 +342,19 @@ function DirectoryView() {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => navigate(getUrl(item?.id, false))}
+                      onClick={() => navigate(getUrl(item?._id, false))}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
                     >
                       Open
                     </button>
                     <button
-                      onClick={() => handleRename(item?.name, item?.id, false)}
+                      onClick={() => handleRename(item?.name, item?._id, false)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                     >
                       Rename
                     </button>
                     <button
-                      onClick={() => handleDelete(item?.id, false)}
+                      onClick={() => handleDelete(item?._id, false)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
                     >
                       Delete
@@ -391,7 +391,7 @@ function DirectoryView() {
                   <div className="flex space-x-2">
                     <button
                       onClick={() =>
-                        window.open(getUrl(item?.id, true) + "?action=open")
+                        window.open(getUrl(item?._id, true) + "?action=open")
                       }
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors text-center"
                     >
@@ -400,20 +400,20 @@ function DirectoryView() {
                     <button
                       onClick={() =>
                         (window.location.href =
-                          getUrl(item?.id, true) + "?action=download")
+                          getUrl(item?._id, true) + "?action=download")
                       }
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors text-center"
                     >
                       Download
                     </button>
                     <button
-                      onClick={() => handleRename(item?.name, item?.id, true)}
+                      onClick={() => handleRename(item?.name, item?._id, true)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                     >
                       Rename
                     </button>
                     <button
-                      onClick={() => handleDelete(item?.id, true)}
+                      onClick={() => handleDelete(item?._id, true)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
                     >
                       Delete
