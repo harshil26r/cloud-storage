@@ -93,7 +93,7 @@ function DirectoryView() {
     const file = e.target.files[0];
     const form = new FormData();
     form.append("file", file);
-    form.append("parentDirId", directoryId || currentDir?.id);
+    form.append("parentDirId", directoryId || currentDir?._id);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${BASE_URL}file/`, true);
     xhr.withCredentials = true;
@@ -326,7 +326,7 @@ function DirectoryView() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <svg
-                        className="w-6 h-6 text-yellow-500 flex-shrink-0"
+                        className="w-6 h-6 text-yellow-500 shrink-0"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -370,7 +370,7 @@ function DirectoryView() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <svg
-                        className="w-6 h-6 text-blue-500 flex-shrink-0"
+                        className="w-6 h-6 text-blue-500 shrink-0"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >

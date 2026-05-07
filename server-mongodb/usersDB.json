@@ -1,0 +1,16 @@
+[
+  {
+    "id": "bb4ecfe9-3703-4ae3-bcea-55331cf5100e",
+    "rootDirId": "b0a9a88e-aaca-4f78-865f-7f7c476b0915",
+    "username": "harshil26r",
+    "email": "harshil@example.com",
+    "password": "12345678"
+  },
+  {
+    "id": "434c72c4-412c-494f-ac4a-d1f2e27d297f",
+    "rootDirId": "9a158eb1-690e-4c8a-8a2b-201e7b74c24d",
+    "username": "harshil26r",
+    "email": "harshil26@example.com",
+    "password": "12345678"
+  }
+]
