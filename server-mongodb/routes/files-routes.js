@@ -156,7 +156,7 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
 
 fileRouter.patch('/:id', async (req, res) => {
   try {
-    const { user } = req;
+    const { user, db } = req;
 
     const { id } = req.params;
     const newName = req.body.newName?.trim();
@@ -169,23 +169,30 @@ fileRouter.patch('/:id', async (req, res) => {
       return res.status(400).json({ error: 'New filename is required' });
     }
 
-    const fileInfo = filesData?.find((file) => file?.id === id);
+    const fileCollection = db.collection('files');
+    const dirCollection = db.collection('directories');
+
+    const fileInfo = await fileCollection.findOne({ _id: new ObjectId(id) });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDir = directories.find(
-      (dir) => dir.id === fileInfo.parentDirId,
-    );
+    const parentDir = await dirCollection.findOne({
+      _id: new ObjectId(fileInfo.parentDirId),
+    });
 
-    if (parentDir?.userId !== user.id)
+    console.log(parentDir?.userId, user._id, fileInfo);
+
+    if (parentDir?.userId.toString() !== user._id.toString())
       return res
         .status(401)
         .json({ message: "You don't have permission to perform this action!" });
 
-    fileInfo.name = `${newName}`;
-    await writeFile('./filesDB.json', JSON.stringify(filesData), 'utf8');
+    await fileCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { name: newName } },
+    );
 
     res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
@@ -195,34 +202,31 @@ fileRouter.patch('/:id', async (req, res) => {
 
 fileRouter.delete('/:id', async (req, res) => {
   try {
-    const { user } = req;
+    const { user, db } = req;
     const { id } = req.params;
 
     if (!id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
-    const fileIndex = filesData?.findIndex((file) => file.id === id);
+    const fileCollection = db.collection('files');
+    const dirCollection = db.collection('directories');
 
-    if (fileIndex === -1 || fileIndex === undefined) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-
-    const fileInfo = filesData[fileIndex];
+    const fileInfo = await fileCollection.findOne({ _id: new ObjectId(id) });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDirData = directories.find(
-      (directory) => fileInfo.parentDirId === directory.id,
-    );
+    const parentDirData = await dirCollection.findOne({
+      _id: new ObjectId(fileInfo.parentDirId),
+    });
 
     if (!parentDirData) {
       return res.status(404).json({ error: 'Parent directory not found' });
     }
 
-    if (parentDirData.userId !== user.id) {
+    if (parentDirData.userId.toString() !== user._id.toString()) {
       return res
         .status(401)
         .json({ message: "You don't have permission to perform this action!" });
@@ -233,14 +237,10 @@ fileRouter.delete('/:id', async (req, res) => {
       (err) => console.error(`Failed to delete physical file ${id}:`, err),
     );
 
-    filesData.splice(fileIndex, 1);
-    parentDirData.files = parentDirData.files.filter((file) => file !== id);
-
-    await writeFile('./filesDB.json', JSON.stringify(filesData), 'utf8');
-    await writeFile(
-      './directoriesDB.json',
-      JSON.stringify(directories),
-      'utf8',
+    fileCollection.deleteOne({ _id: new ObjectId(id) });
+    dirCollection.updateOne(
+      { _id: new ObjectId(fileInfo.parentDirId) },
+      { $pull: { files: new ObjectId(id) } },
     );
 
     res.status(200).json({ message: 'File deleted successfully' });

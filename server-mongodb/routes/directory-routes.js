@@ -98,7 +98,7 @@ dirRouter.post('/{:parentDirId}', async (req, res) => {
 
 dirRouter.patch('/:id', async (req, res) => {
   try {
-    const { db } = req;
+    const { user, db } = req;
     const id = req.params.id;
     const newName = req.body.newName?.trim();
 
@@ -140,9 +140,11 @@ dirRouter.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Directory ID is required' });
     }
 
-    const dirInfo = directoriesData.find(
-      (dir) => dir.id === id && dir.userId === req.user.id,
-    );
+    const dirCollection = db.collection('directories');
+    const dirInfo = await dirCollection.findOne({
+      _id: new ObjectId(id),
+      userId: new ObjectId(user._id),
+    });
 
     if (!dirInfo) {
       return res

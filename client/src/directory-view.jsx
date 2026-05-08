@@ -229,7 +229,7 @@ function DirectoryView() {
           <>
             {/* List View - Desktop */}
             {viewMode === "list" && (
-              <div className="hidden md:block overflow-x-auto bg-white border border-gray-200 rounded-lg">
+              <div className="hidden md:block overflow-x-auto min-h-lvh bg-white border border-gray-200 rounded-lg">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
