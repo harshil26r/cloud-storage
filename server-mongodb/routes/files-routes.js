@@ -85,8 +85,6 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to save file metadata' });
   }
 });
-
-// fileRouter.post("/{:filename}", (req, res) => {
 //   try {
 //     const filename = req.params.filename?.trim() || "untitled.txt";
 //     const parentDirId = req.headers.parentdirid || directories[0]?.id;

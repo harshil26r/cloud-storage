@@ -85,7 +85,7 @@ dirRouter.post('/{:parentDirId}', async (req, res) => {
       _id: id,
       name: dirName,
       userId: user._id,
-      parentDirId,
+      parentDirId: new ObjectId(parentDirId),
       files: [],
       directories: [],
     });
@@ -134,17 +134,22 @@ dirRouter.patch('/:id', async (req, res) => {
 
 dirRouter.delete('/:id', async (req, res) => {
   try {
+    const { user, db } = req;
     const { id } = req.params;
 
     if (!id) {
       return res.status(400).json({ error: 'Directory ID is required' });
     }
 
-    const dirCollection = db.collection('directories');
-    const dirInfo = await dirCollection.findOne({
+    const directoriesCollection = db.collection('directories');
+    const filesCollection = db.collection('files');
+
+    const dirInfo = await directoriesCollection.findOne({
       _id: new ObjectId(id),
-      userId: new ObjectId(user._id),
+      userId: user._id,
     });
+
+    console.log(dirInfo);
 
     if (!dirInfo) {
       return res
@@ -157,60 +162,57 @@ dirRouter.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Cannot delete root directory' });
     }
 
-    const dirMap = new Map(directoriesData.map((dir) => [dir.id, dir]));
+    // Collect all child directories recursively
     const idsToDelete = new Set();
 
-    // collect all child directories recursively
-    function collect(dirId) {
-      idsToDelete.add(dirId);
+    async function collect(dirId) {
+      idsToDelete.add(dirId.toString());
 
-      const currentDir = dirMap.get(dirId);
+      const currentDir = await directoriesCollection.findOne({
+        _id: new ObjectId(dirId),
+      });
       if (!currentDir) return;
 
-      currentDir.directories.forEach((childId) => collect(childId));
-    }
-
-    collect(id);
-
-    // remove reference from parent
-    if (dirInfo.parentDirId) {
-      const parentDir = directoriesData.find(
-        (dir) => dir.id === dirInfo.parentDirId,
+      await Promise.all(
+        currentDir.directories.map((childId) => collect(childId)),
       );
-
-      if (parentDir) {
-        parentDir.directories = parentDir.directories.filter(
-          (childId) => childId !== id,
-        );
-      }
     }
 
-    // delete directories
-    const newDirData = directoriesData.filter(
-      (dir) => !idsToDelete.has(dir.id),
+    await collect(id);
+
+    // Remove reference from parent
+    await directoriesCollection.updateOne(
+      { _id: new ObjectId(dirInfo.parentDirId) },
+      { $pull: { directories: new ObjectId(id) } },
     );
 
-    // delete files from deleted directories
-    const filesToDelete = filesData.filter((file) =>
-      idsToDelete.has(file.parentDirId),
+    // Find files to delete (for physical file removal)
+    const objectIdsToDelete = [...idsToDelete].map(
+      (dirId) => new ObjectId(dirId),
     );
 
-    const newFilesData = filesData.filter(
-      (file) => !idsToDelete.has(file.parentDirId),
-    );
+    const filesToDelete = await filesCollection
+      .find({ parentDirId: { $in: objectIdsToDelete } })
+      .toArray();
 
-    // remove physical files
+    // Remove physical files
     await Promise.all(
       filesToDelete.map((file) =>
-        rm(`./storage/${file.id}${file.extenstion}`, { force: true }).catch(
-          (err) => console.error(`Failed to delete file ${file.id}:`, err),
+        rm(`./storage/${file._id.toString()}${file.extenstion}`, {
+          force: true,
+        }).catch((err) =>
+          console.error(`Failed to delete file ${file._id}:`, err),
         ),
       ),
     );
 
-    // save db
-    await writeFile('./filesDB.json', JSON.stringify(newFilesData), 'utf8');
-    await writeFile('./directoriesDB.json', JSON.stringify(newDirData), 'utf8');
+    // Delete files from deleted directories
+    await filesCollection.deleteMany({
+      parentDirId: { $in: objectIdsToDelete },
+    });
+
+    // Delete all collected directories
+    await directoriesCollection.deleteMany({ _id: { $in: objectIdsToDelete } });
 
     res.status(200).json({
       message: 'Directory deleted successfully',
@@ -220,5 +222,4 @@ dirRouter.delete('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 export default dirRouter;
