@@ -11,24 +11,21 @@ const fileRouter = Router();
 fileRouter.get('/:id', async (req, res) => {
   try {
     const { user, db } = req;
-    const { id } = req.params;
+    const _id = new ObjectId(req.params.id);
 
-    if (!id) {
+    if (!_id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
-    const fileCollection = db.collection('files');
-    const dirCollection = db.collection('directories');
-
-    const fileInfo = await fileCollection.find({ _id: new ObjectId(id) });
+    const fileInfo = await db.collection('files').find({ _id });
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
-    const parentDir = await dirCollection.findOne({
-      parentDirId: new ObjectId(fileInfo.parentDirId),
+    const parentDir = await db.collection('directories').findOne({
+      parentDirId: fileInfo.parentDirId,
     });
 
-    if (parentDir?.userId !== user._id)
+    if (parentDir?.userId.toString() !== user._id.toString())
       return res
         .status(401)
         .json({ message: "You don't have permission to preview this file!" });
@@ -40,7 +37,9 @@ fileRouter.get('/:id', async (req, res) => {
       );
     }
 
-    res.sendFile(`${process.cwd()}/storage/${id}${fileInfo.extension}`);
+    res.sendFile(
+      `${process.cwd()}/storage/${_id.toString()}${fileInfo.extension}`,
+    );
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -48,36 +47,18 @@ fileRouter.get('/:id', async (req, res) => {
 
 fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
   const { db } = req;
-  const parentDirId = req.body.parentDirId;
+  const parentDirId = req.body.parentDirId
+    ? new ObjectId(req.body.parentDirId)
+    : undefined;
   const { _id, extension, originalname } = req.file;
 
-  const fileCollection = db.collection('files');
-  const dirCollection = db.collection('directories');
-
-  if (!parentDirId) {
-    return res.status(400).json({ error: 'Parent directory ID is required' });
-  }
-
-  const parentDirData = await dirCollection.findOne({
-    _id: new ObjectId(parentDirId),
-  });
-
-  if (!parentDirData) {
-    return res.status(404).json({ error: 'Parent directory not found' });
-  }
-
   try {
-    await fileCollection.insertOne({
-      _id: new ObjectId(_id),
+    const fileCollection = await db.collection('files').insertOne({
+      _id,
       extension,
       name: originalname,
-      parentDirId: new ObjectId(parentDirId),
+      parentDirId,
     });
-
-    await dirCollection.updateOne(
-      { _id: new ObjectId(parentDirId) },
-      { $push: { files: _id } },
-    );
 
     res.status(201).json({ message: 'File uploaded successfully', _id });
   } catch (dbErr) {
@@ -85,81 +66,15 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to save file metadata' });
   }
 });
-//   try {
-//     const filename = req.params.filename?.trim() || "untitled.txt";
-//     const parentDirId = req.headers.parentdirid || directories[0]?.id;
-
-//     if (!filename) {
-//       return res.status(400).json({ error: "Filename is required" });
-//     }
-
-//     if (!parentDirId) {
-//       return res.status(400).json({ error: "Parent directory ID is required" });
-//     }
-
-//     const parentDirData = directories.find(
-//       (directory) => directory.id === parentDirId,
-//     );
-
-//     if (!parentDirData) {
-//       return res.status(404).json({ error: "Parent directory not found" });
-//     }
-
-//     const extension = path.extname(filename);
-//     const id = crypto.randomUUID();
-//     parentDirData.files.push(id);
-
-//     const writableStream = createWriteStream(`./storage/${id}${extension}`);
-
-//     writableStream.on("error", (err) => {
-//       console.error(`Stream error for file ${id}:`, err);
-//       res.status(500).json({ error: "Failed to write file" });
-//     });
-
-//     req.on("error", (err) => {
-//       console.error(`Request error for file ${id}:`, err);
-//       writableStream.destroy();
-//       res.status(400).json({ error: "Upload interrupted" });
-//     });
-
-//     req.pipe(writableStream);
-
-//     writableStream.on("finish", async () => {
-//       try {
-//         filesData.push({
-//           id,
-//           extension,
-//           name: filename,
-//           parentDirId,
-//         });
-
-//         await writeFile("./filesDB.json", JSON.stringify(filesData), "utf8");
-//         await writeFile(
-//           "./directoriesDB.json",
-//           JSON.stringify(directories),
-//           "utf8",
-//         );
-
-//         res.status(201).json({ message: "File uploaded successfully", id });
-//       } catch (dbErr) {
-//         console.error(`Database error for file ${id}:`, dbErr);
-//         res.status(500).json({ error: "Failed to save file metadata" });
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Upload error:", error);
-//     res.status(500).json({ error: error.message || "File upload failed" });
-//   }
-// });
 
 fileRouter.patch('/:id', async (req, res) => {
   try {
     const { user, db } = req;
 
-    const { id } = req.params;
+    const _id = req.params.id ? new ObjectId(req.params.id) : undefined;
     const newName = req.body.newName?.trim();
 
-    if (!id) {
+    if (!_id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
@@ -168,29 +83,22 @@ fileRouter.patch('/:id', async (req, res) => {
     }
 
     const fileCollection = db.collection('files');
-    const dirCollection = db.collection('directories');
-
-    const fileInfo = await fileCollection.findOne({ _id: new ObjectId(id) });
+    const fileInfo = await fileCollection.findOne({ _id });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDir = await dirCollection.findOne({
-      _id: new ObjectId(fileInfo.parentDirId),
+    const parentDir = await db.collection('directories').findOne({
+      _id: fileInfo.parentDirId,
     });
-
-    console.log(parentDir?.userId, user._id, fileInfo);
 
     if (parentDir?.userId.toString() !== user._id.toString())
       return res
         .status(401)
         .json({ message: "You don't have permission to perform this action!" });
 
-    await fileCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { name: newName } },
-    );
+    await fileCollection.updateOne({ _id }, { $set: { name: newName } });
 
     res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
@@ -201,23 +109,21 @@ fileRouter.patch('/:id', async (req, res) => {
 fileRouter.delete('/:id', async (req, res) => {
   try {
     const { user, db } = req;
-    const { id } = req.params;
+    const _id = req.params.id ? new ObjectId(req.params.id) : undefined;
 
-    if (!id) {
+    if (!_id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
     const fileCollection = db.collection('files');
-    const dirCollection = db.collection('directories');
-
-    const fileInfo = await fileCollection.findOne({ _id: new ObjectId(id) });
+    const fileInfo = await fileCollection.findOne({ _id });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDirData = await dirCollection.findOne({
-      _id: new ObjectId(fileInfo.parentDirId),
+    const parentDirData = await db.collection('directories').findOne({
+      _id: fileInfo.parentDirId,
     });
 
     if (!parentDirData) {
@@ -231,15 +137,13 @@ fileRouter.delete('/:id', async (req, res) => {
     }
 
     // Remove physical file
-    await rm(`./storage/${id}${fileInfo.extension}`, { force: true }).catch(
-      (err) => console.error(`Failed to delete physical file ${id}:`, err),
+    await rm(`./storage/${_id}${fileInfo.extension}`, {
+      force: true,
+    }).catch((err) =>
+      console.error(`Failed to delete physical file ${_id}:`, err),
     );
 
-    fileCollection.deleteOne({ _id: new ObjectId(id) });
-    dirCollection.updateOne(
-      { _id: new ObjectId(fileInfo.parentDirId) },
-      { $pull: { files: new ObjectId(id) } },
-    );
+    fileCollection.deleteOne({ _id });
 
     res.status(200).json({ message: 'File deleted successfully' });
   } catch (err) {

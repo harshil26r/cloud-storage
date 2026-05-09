@@ -39,8 +39,6 @@ authRouter.post('/signup', async (req, res) => {
     const rootDir = await dirCollection.insertOne({
       name: 'root',
       parentDirId: null,
-      files: [],
-      directories: [],
     });
     const createdUser = await db.collection('users').insertOne({
       username,
