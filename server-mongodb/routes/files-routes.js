@@ -28,7 +28,7 @@ fileRouter.get('/:id', async (req, res) => {
     if (parentDir?.userId.toString() !== user._id.toString())
       return res
         .status(401)
-        .json({ message: "You don't have permission to preview this file!" });
+        .json({ error: "You don't have permission to preview this file!" });
 
     if (req.query.action === 'download') {
       res.setHeader(
@@ -96,7 +96,7 @@ fileRouter.patch('/:id', async (req, res) => {
     if (parentDir?.userId.toString() !== user._id.toString())
       return res
         .status(401)
-        .json({ message: "You don't have permission to perform this action!" });
+        .json({ error: "You don't have permission to perform this action!" });
 
     await fileCollection.updateOne({ _id }, { $set: { name: newName } });
 
@@ -133,7 +133,7 @@ fileRouter.delete('/:id', async (req, res) => {
     if (parentDirData.userId.toString() !== user._id.toString()) {
       return res
         .status(401)
-        .json({ message: "You don't have permission to perform this action!" });
+        .json({ error: "You don't have permission to perform this action!" });
     }
 
     // Remove physical file

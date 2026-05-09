@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
+
 const SignUp = () => {
+  const navigate = useNavigate();
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const [errors, setErrors] = useState({});
@@ -77,22 +80,35 @@ const SignUp = () => {
     }
   };
   const handleSubmit = async () => {
-    const res = await fetch(`${BASE_URL}auth/signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        isSubscribe: data.isSubscribe,
-        role: data.role,
-      }),
-    });
+    try {
+      const res = await fetch(`${BASE_URL}auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          isSubscribe: data.isSubscribe,
+          role: data.role,
+        }),
+      });
 
-    const response = await res.json();
-    console.log(response);
+      const response = await res.json();
+
+      if (res.ok && response) {
+        showSuccessToast(response.message);
+        setTimeout(() => {
+          navigate("/login");
+        }, 500);
+      } else {
+        showErrorToast(response.error);
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      showErrorToast(error.message);
+    }
   };
   return (
     <>
@@ -224,7 +240,7 @@ const SignUp = () => {
 
             <button
               type="submit"
-              className="flex justify-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              className="flex justify-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
               Register
             </button>

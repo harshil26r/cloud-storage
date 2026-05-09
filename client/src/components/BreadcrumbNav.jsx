@@ -1,8 +1,4 @@
-import { useNavigate } from "react-router";
-
 export default function BreadcrumbNav({ currentDir, onBack }) {
-  const navigate = useNavigate();
-
   return (
     <div className="flex items-center space-x-2">
       {currentDir?.name !== "root" && (

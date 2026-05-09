@@ -69,13 +69,16 @@ dirRouter.post('/{:parentDirId}', async (req, res) => {
       return res.status(404).json({ error: 'Parent directory not found' });
     }
 
-    dirCollection.insertOne({
+    const createdDir = await dirCollection.insertOne({
       name: dirName,
       userId: user._id,
       parentDirId,
     });
 
-    res.status(201).json({ message: 'Directory created successfully', id });
+    res.status(201).json({
+      message: 'Directory created successfully',
+      id: createdDir.insertedId,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

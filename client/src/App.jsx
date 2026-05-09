@@ -3,6 +3,7 @@ import DirectoryView from "./directory-view";
 import Login from "./components/login";
 import SignUp from "./components/signup";
 import NotFound from "./components/NotFound";
+import { Toaster } from "react-hot-toast";
 
 const router = createBrowserRouter([
   {
@@ -28,7 +29,12 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster />
+    </>
+  );
 }
 
 export default App;

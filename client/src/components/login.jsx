@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
 
 const Login = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -22,22 +23,33 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch(`${BASE_URL}auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: data.email,
-        password: data.password,
-      }),
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(`${BASE_URL}auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+        credentials: "include",
+      });
 
-    const response = await res.json();
-    console.log(response);
-    if (response) {
-      navigate("/");
+      const response = await res.json();
+      console.log(response);
+
+      if (res.ok && response) {
+        showSuccessToast(response.message);
+        setTimeout(() => {
+          navigate("/");
+        }, 500);
+      } else {
+        showErrorToast(response.error);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      showErrorToast(error.message);
     }
   };
   return (
@@ -97,7 +109,7 @@ const Login = () => {
 
               <button
                 type="submit"
-                className="mt-4 flex  items-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                className="mt-4 flex  items-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500  focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600"
               >
                 Login
               </button>

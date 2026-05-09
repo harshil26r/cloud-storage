@@ -7,6 +7,7 @@ import FolderItem from "./components/FolderItem";
 import EmptyState from "./components/EmptyState";
 import RenameDialog from "./components/RenameDialog";
 import CreateFolderDialog from "./components/CreateFolderDialog";
+import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -24,14 +25,24 @@ function DirectoryView() {
   let { directoryId } = useParams();
 
   const handleDelete = async (_id, isFile) => {
-    const response = await fetch(
-      `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      },
-    );
-    const data = await response.text();
+    try {
+      const response = await fetch(
+        `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const data = await response.json();
+      if (response.ok) {
+        showSuccessToast(data.message);
+      } else {
+        showErrorToast(data.message || data.error);
+      }
+    } catch (error) {
+      console.error("Error deleting:", error);
+      showErrorToast(error.message);
+    }
     getAllFiles();
   };
 
@@ -42,7 +53,7 @@ function DirectoryView() {
 
   const handleSaveFileName = async () => {
     if (!renamingItem || !newFileName.trim()) {
-      alert("Please enter a valid name");
+      showErrorToast("Please enter a valid name");
       return;
     }
 
@@ -62,12 +73,17 @@ function DirectoryView() {
         },
       );
       const data = await response.json();
+      if (response.ok) {
+        showSuccessToast(data.message);
+      } else {
+        showErrorToast(data.message || data.error);
+      }
       setNewFileName("");
       setRenamingItem(null);
       getAllFiles(directoryId);
     } catch (error) {
       console.error("Error renaming:", error);
-      alert("Error renaming item");
+      showErrorToast(error.message);
     }
   };
 
@@ -98,8 +114,25 @@ function DirectoryView() {
     xhr.open("POST", `${BASE_URL}file/`, true);
     xhr.withCredentials = true;
     xhr.addEventListener("load", () => {
+      try {
+        const response = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          showSuccessToast(response.message);
+        } else {
+          showErrorToast(response.message || response.error);
+        }
+      } catch (parseError) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          showSuccessToast("File uploaded successfully!");
+        } else {
+          showErrorToast(`Failed to upload file : ${parseError}`);
+        }
+      }
       getAllFiles();
       e.target.value = "";
+    });
+    xhr.addEventListener("error", () => {
+      showErrorToast("Upload error occurred");
     });
     xhr.upload.addEventListener("progress", (e) => {
       const totalProgress = (e.loaded / e.total) * 100;
@@ -110,7 +143,7 @@ function DirectoryView() {
 
   const createFolder = async () => {
     if (!newFolderName.trim()) {
-      alert("Please enter a folder name");
+      showErrorToast("Please enter a folder name");
       return;
     }
     try {
@@ -128,12 +161,17 @@ function DirectoryView() {
         },
       );
       const data = await response.json();
+      if (response.ok) {
+        showSuccessToast(data.message);
+      } else {
+        showErrorToast(data.message || data.error);
+      }
       setNewFolderName("");
       setShowCreateFolder(false);
       getAllFiles();
     } catch (error) {
       console.error("Error creating folder:", error);
-      alert("Error creating folder");
+      showErrorToast(error.message);
     }
   };
 

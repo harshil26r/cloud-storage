@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
 
 export default function Header({ viewMode, onViewChange }) {
   const [user, setUser] = useState(null);
@@ -16,23 +17,35 @@ export default function Header({ viewMode, onViewChange }) {
         const data = await response.json();
         setUser(data);
       } else {
+        const error = await response.json();
+        showErrorToast(error.error);
         navigate("/login");
       }
     } catch (error) {
       console.error("Error fetching user info:", error);
+      showErrorToast(error.message);
       navigate("/login");
     }
   };
 
   const handleLogout = async () => {
     try {
-      await fetch(`${BASE_URL}auth/logout`, {
+      const response = await fetch(`${BASE_URL}auth/logout`, {
         method: "POST",
         credentials: "include",
       });
-      navigate("/login");
+      const data = await response.json();
+      if (response.ok) {
+        showSuccessToast(data.message);
+        setTimeout(() => {
+          navigate("/login");
+        }, 500);
+      } else {
+        showErrorToast(data.error);
+      }
     } catch (error) {
       console.error("Error logging out:", error);
+      showErrorToast(error.message);
     }
   };
 

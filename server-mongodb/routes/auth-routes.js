@@ -15,7 +15,7 @@ authRouter.post('/login', async (req, res) => {
   const user = await db.collection('users').findOne({ email, password });
 
   if (!user) {
-    return res.status(404).json({ message: 'Invalid Credentials' });
+    return res.status(404).json({ error: 'Invalid Credentials' });
   }
   res.cookie('uid', user._id.toString(), {
     maxAge: 60 * 1000 * 60,
@@ -32,7 +32,7 @@ authRouter.post('/signup', async (req, res) => {
   const existingUser = await db.collection('users').findOne({ email });
 
   if (existingUser)
-    return res.status(409).json({ message: 'Email id already Register!' });
+    return res.status(409).json({ error: 'Email id already Register!' });
 
   try {
     const dirCollection = db.collection('directories');

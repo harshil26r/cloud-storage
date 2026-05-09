@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 export default function ActionMenu({
-  item,
   isFile,
   onOpen,
   onDownload,
