@@ -10,7 +10,7 @@ import connectDB from './middleware/mongoConnect.js';
 const port = 4000;
 const app = express();
 
-app.use(connectDB);
+const db = await connectDB();
 
 app.use(express.json()); // parse body for all request
 app.use(
@@ -20,6 +20,11 @@ app.use(
   }),
 );
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  req.db = db;
+  next();
+});
 
 app.use((req, res, next) => {
   if (req.query.action === 'download') {

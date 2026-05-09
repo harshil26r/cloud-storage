@@ -191,7 +191,7 @@ dirRouter.delete('/:id', async (req, res) => {
     // remove physical files
     await Promise.all(
       filesToDelete.map((file) =>
-        rm(`./storage/${file.id}${file.extenstion}`, { force: true }).catch(
+        rm(`./storage/${file.id}${file.extension}`, { force: true }).catch(
           (err) => console.error(`Failed to delete file ${file.id}:`, err),
         ),
       ),

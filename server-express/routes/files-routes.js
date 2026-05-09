@@ -36,7 +36,7 @@ fileRouter.get('/:id', (req, res) => {
       );
     }
 
-    res.sendFile(`${process.cwd()}/storage/${id}${fileInfo.extenstion}`);
+    res.sendFile(`${process.cwd()}/storage/${id}${fileInfo.extension}`);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -44,7 +44,7 @@ fileRouter.get('/:id', (req, res) => {
 
 fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
   const parentDirId = req.body.parentDirId;
-  const { id, extenstion, originalname } = req.file;
+  const { id, extension, originalname } = req.file;
 
   if (!parentDirId) {
     return res.status(400).json({ error: 'Parent directory ID is required' });
@@ -61,7 +61,7 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
   try {
     filesData.push({
       id,
-      extenstion,
+      extension,
       name: originalname,
       parentDirId,
     });
@@ -102,11 +102,11 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
 //       return res.status(404).json({ error: "Parent directory not found" });
 //     }
 
-//     const extenstion = path.extname(filename);
+//     const extension = path.extname(filename);
 //     const id = crypto.randomUUID();
 //     parentDirData.files.push(id);
 
-//     const writableStream = createWriteStream(`./storage/${id}${extenstion}`);
+//     const writableStream = createWriteStream(`./storage/${id}${extension}`);
 
 //     writableStream.on("error", (err) => {
 //       console.error(`Stream error for file ${id}:`, err);
@@ -125,7 +125,7 @@ fileRouter.post('/', fileUploadMiddleware, async (req, res) => {
 //       try {
 //         filesData.push({
 //           id,
-//           extenstion,
+//           extension,
 //           name: filename,
 //           parentDirId,
 //         });
@@ -224,7 +224,7 @@ fileRouter.delete('/:id', async (req, res) => {
     }
 
     // Remove physical file
-    await rm(`./storage/${id}${fileInfo.extenstion}`, { force: true }).catch(
+    await rm(`./storage/${id}${fileInfo.extension}`, { force: true }).catch(
       (err) => console.error(`Failed to delete physical file ${id}:`, err),
     );
 
