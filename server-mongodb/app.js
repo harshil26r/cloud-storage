@@ -5,7 +5,7 @@ import fileRouter from './routes/files-routes.js';
 import authRouter from './routes/auth-routes.js';
 import cookieParser from 'cookie-parser';
 import isLogin from './middleware/isLogin.js';
-import connectDB from './middleware/mongoConnect.js';
+import { connectDB } from './middleware/mongoConnect.js';
 
 const port = 4000;
 const app = express();
