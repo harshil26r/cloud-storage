@@ -5,6 +5,7 @@ import directoriesData from '../directoriesDB.json' with { type: 'json' };
 import filesData from '../filesDB.json' with { type: 'json' };
 import usersData from '../usersDB.json' with { type: 'json' };
 import { ObjectId } from 'mongodb';
+import { client } from '../middleware/mongoConnect.js';
 
 const dirRouter = Router();
 
@@ -118,6 +119,7 @@ dirRouter.patch('/:id', async (req, res) => {
 });
 
 dirRouter.delete('/:id', async (req, res) => {
+  const session = client.startSession();
   try {
     const { user, db } = req;
     const _id = new ObjectId(req.params.id);
@@ -160,15 +162,25 @@ dirRouter.delete('/:id', async (req, res) => {
       allFiles.map((file) => rm(`./storage/${file._id}${file.extension}`)),
     );
 
+    session.startTransaction();
+
     // Delete file documents from DB
-    await filesCollection.deleteMany({
-      parentDirId: { $in: allDirIds },
-    });
+    await filesCollection.deleteMany(
+      {
+        parentDirId: { $in: allDirIds },
+      },
+      { session },
+    );
 
     // Delete all directories from DB
-    await directoriesCollection.deleteMany({
-      _id: { $in: allDirIds },
-    });
+    await directoriesCollection.deleteMany(
+      {
+        _id: { $in: allDirIds },
+      },
+      { session },
+    );
+
+    session.commitTransaction();
 
     res.status(200).json({
       message: 'Directory deleted successfully',
@@ -176,6 +188,7 @@ dirRouter.delete('/:id', async (req, res) => {
       deletedFilesCount: allFiles.length,
     });
   } catch (err) {
+    session.abortTransaction();
     res.status(500).json({ error: err.message });
   }
 });

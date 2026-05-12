@@ -5,6 +5,7 @@ import usersData from '../usersDB.json' with { type: 'json' };
 import directoriesData from '../directoriesDB.json' with { type: 'json' };
 import { ObjectId } from 'mongodb';
 import isLogin from '../middleware/isLogin.js';
+import { client } from '../middleware/mongoConnect.js';
 
 const authRouter = Router();
 
@@ -34,28 +35,42 @@ authRouter.post('/signup', async (req, res) => {
   if (existingUser)
     return res.status(409).json({ error: 'Email id already Register!' });
 
+  const session = client.startSession();
   try {
     const dirCollection = db.collection('directories');
-    const rootDir = await dirCollection.insertOne({
-      name: 'root',
-      parentDirId: null,
-    });
-    const createdUser = await db.collection('users').insertOne({
-      username,
-      email,
-      password,
-      rootDirId: rootDir.insertedId,
-    });
+
+    session.startTransaction();
+
+    const rootDir = await dirCollection.insertOne(
+      {
+        name: 'root',
+        parentDirId: null,
+      },
+      { session },
+    );
+    const createdUser = await db.collection('users').insertOne(
+      {
+        username,
+        email,
+        password,
+        rootDirId: rootDir.insertedId,
+      },
+      { session },
+    );
 
     await dirCollection.updateOne(
       { _id: rootDir.insertedId },
       { $set: { userId: createdUser.insertedId } },
+      { session },
     );
+
+    session.commitTransaction();
 
     res
       .status(201)
       .json({ message: `User Register Succesfully with email ${email}` });
   } catch (error) {
+    session.abortTransaction();
     res.status(500).json({ message: error });
   }
 });
