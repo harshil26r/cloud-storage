@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createWriteStream } from 'fs';
 import { rename, rm, writeFile } from 'fs/promises';
-import filesData from '../filesDB.json' with { type: 'json' };
+
 import directories from '../directoriesDB.json' with { type: 'json' };
 import fileUploadMiddleware from '../middleware/fileUpload.js';
 import { ObjectId } from 'mongodb';

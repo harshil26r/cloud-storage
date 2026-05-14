@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 
 // Connection URL
-const url = 'mongodb://localhost:27017/storageDB';
+const url = 'mongodb://admin@localhost:27017/storageDB?authSource=admin';
 export const client = new MongoClient(url, { maxPoolSize: 10 });
 
 // Database Name

@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb';
-import usersData from '../usersDB.json' with { type: 'json' };
 
 const isLogin = async (req, res, next) => {
   const { db } = req;

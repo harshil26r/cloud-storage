@@ -1,9 +1,7 @@
 import { Router } from 'express';
 import { readdir, rm, writeFile } from 'fs/promises';
 import mime from 'mime';
-import directoriesData from '../directoriesDB.json' with { type: 'json' };
-import filesData from '../filesDB.json' with { type: 'json' };
-import usersData from '../usersDB.json' with { type: 'json' };
+
 import { ObjectId } from 'mongodb';
 import { client } from '../middleware/mongoConnect.js';
 

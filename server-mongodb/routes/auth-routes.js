@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { writeFile } from 'fs/promises';
 
-import usersData from '../usersDB.json' with { type: 'json' };
-import directoriesData from '../directoriesDB.json' with { type: 'json' };
 import { ObjectId } from 'mongodb';
 import isLogin from '../middleware/isLogin.js';
 import { client } from '../middleware/mongoConnect.js';
