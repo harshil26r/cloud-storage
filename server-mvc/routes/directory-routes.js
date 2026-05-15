@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { readdir, rm, writeFile } from 'fs/promises';
 import mime from 'mime';
-import { client } from '../middleware/mongoConnect.js';
 import {
   creatDirectory,
   deleteDirectory,

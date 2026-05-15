@@ -1,10 +1,12 @@
 import { ObjectId } from 'mongodb';
+import { User } from '../models/userModel.js';
+import { Directory } from '../models/directoryModel.js';
+import mongoose, { Types } from 'mongoose';
 
 export const login = async (req, res) => {
-  const { db } = req;
   const { email, password } = req.body;
 
-  const user = await db.collection('users').findOne({ email, password });
+  const user = await User.findOne({ email, password });
 
   if (!user) {
     return res.status(404).json({ error: 'Invalid Credentials' });
@@ -18,43 +20,43 @@ export const login = async (req, res) => {
 };
 
 export const signup = async (req, res) => {
-  const { db } = req;
   const { username, email, password } = req.body;
 
-  const existingUser = await db.collection('users').findOne({ email });
+  const existingUser = await User.findOne({ email });
+
+  console.log(existingUser);
 
   if (existingUser)
     return res.status(409).json({ error: 'Email id already Register!' });
 
-  const session = client.startSession();
+  const session = await mongoose.startSession();
   try {
-    const dirCollection = db.collection('directories');
-
     session.startTransaction();
 
-    const rootDir = await dirCollection.insertOne(
-      {
-        name: 'root',
-        parentDirId: null,
-      },
-      { session },
-    );
-    const createdUser = await db.collection('users').insertOne(
-      {
-        username,
-        email,
-        password,
-        rootDirId: rootDir.insertedId,
-      },
-      { session },
-    );
+    const userId = new Types.ObjectId();
+    const rootDirId = new Types.ObjectId();
 
-    await dirCollection.updateOne(
-      { _id: rootDir.insertedId },
-      { $set: { userId: createdUser.insertedId } },
+    const rootDir = await Directory.create(
+      [
+        {
+          name: 'root',
+          parentDirId: null,
+          userId,
+        },
+      ],
       { session },
     );
-
+    const createdUser = await User.create(
+      [
+        {
+          username,
+          email,
+          password,
+          rootDirId,
+        },
+      ],
+      { session },
+    );
     session.commitTransaction();
 
     res
@@ -63,6 +65,8 @@ export const signup = async (req, res) => {
   } catch (error) {
     session.abortTransaction();
     res.status(500).json({ message: error });
+  } finally {
+    session.endSession();
   }
 };
 

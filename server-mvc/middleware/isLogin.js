@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { User } from '../models/userModel.js';
 
 const isLogin = async (req, res, next) => {
   const { db } = req;
@@ -6,9 +7,7 @@ const isLogin = async (req, res, next) => {
 
   if (!uid) return res.status(401).json({ error: 'Please Login First' });
 
-  const foundUser = await db
-    .collection('users')
-    .findOne({ _id: new ObjectId(uid) });
+  const foundUser = await User.findOne({ _id: new ObjectId(uid) });
 
   if (!foundUser) return res.status(404).json({ error: 'User Not Found!' });
 

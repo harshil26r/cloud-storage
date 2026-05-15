@@ -44,9 +44,7 @@ app.use('/auth', authRouter);
 
 // Globle Error Handler
 app.use((err, req, res, next) => {
-  res
-    .status(err.status || 500)
-    .json({ message: `Something went wrong! ${err}` });
+  res.status(err.status || 500).json({ error: `Something went wrong! ${err}` });
 });
 
 app.listen(port, () => {

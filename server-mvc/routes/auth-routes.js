@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import isLogin from '../middleware/isLogin.js';
-import { client } from '../middleware/mongoConnect.js';
 import {
   getUserDetails,
   login,
