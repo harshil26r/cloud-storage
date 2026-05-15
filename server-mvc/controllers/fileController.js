@@ -1,20 +1,22 @@
-import { ObjectId } from 'mongodb';
+import { File } from '../models/fileModel.js';
+import { Directory } from '../models/directoryModel.js';
+import { rm } from 'fs/promises';
 
 export const serveFile = async (req, res) => {
   try {
-    const { user, db } = req;
-    const _id = new ObjectId(req.params.id);
+    const { user } = req;
+    const _id = req.params.id;
 
     if (!_id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
-    const fileInfo = await db.collection('files').find({ _id });
+    const fileInfo = await File.findOne({ _id }).lean();
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
-    const parentDir = await db.collection('directories').findOne({
-      parentDirId: fileInfo.parentDirId,
+    const parentDir = await Directory.findOne({
+      _id: fileInfo.parentDirId,
     });
 
     if (parentDir?.userId.toString() !== user._id.toString())
@@ -38,19 +40,18 @@ export const serveFile = async (req, res) => {
 };
 
 export const uploadFIle = async (req, res) => {
-  const { db } = req;
-  const parentDirId = req.body.parentDirId
-    ? new ObjectId(req.body.parentDirId)
-    : undefined;
+  const parentDirId = req.body.parentDirId;
   const { _id, extension, originalname } = req.file;
 
   try {
-    const fileCollection = await db.collection('files').insertOne({
+    const fileCollection = await File.create({
       _id,
       extension,
       name: originalname,
       parentDirId,
     });
+
+    fileCollection.save();
 
     res.status(201).json({ message: 'File uploaded successfully', _id });
   } catch (dbErr) {
@@ -61,9 +62,9 @@ export const uploadFIle = async (req, res) => {
 
 export const renameFile = async (req, res) => {
   try {
-    const { user, db } = req;
+    const { user } = req;
 
-    const _id = req.params.id ? new ObjectId(req.params.id) : undefined;
+    const _id = req.params.id;
     const newName = req.body.newName?.trim();
 
     if (!_id) {
@@ -74,14 +75,13 @@ export const renameFile = async (req, res) => {
       return res.status(400).json({ error: 'New filename is required' });
     }
 
-    const fileCollection = db.collection('files');
-    const fileInfo = await fileCollection.findOne({ _id });
+    const fileInfo = await File.findOne({ _id });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDir = await db.collection('directories').findOne({
+    const parentDir = await Directory.findOne({
       _id: fileInfo.parentDirId,
     });
 
@@ -90,7 +90,7 @@ export const renameFile = async (req, res) => {
         .status(401)
         .json({ error: "You don't have permission to perform this action!" });
 
-    await fileCollection.updateOne({ _id }, { $set: { name: newName } });
+    await File.updateOne({ _id }, { $set: { name: newName } });
 
     res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
@@ -101,20 +101,19 @@ export const renameFile = async (req, res) => {
 export const deleteFile = async (req, res) => {
   try {
     const { user, db } = req;
-    const _id = req.params.id ? new ObjectId(req.params.id) : undefined;
+    const _id = req.params.id;
 
     if (!_id) {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
-    const fileCollection = db.collection('files');
-    const fileInfo = await fileCollection.findOne({ _id });
+    const fileInfo = await File.findOne({ _id });
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDirData = await db.collection('directories').findOne({
+    const parentDirData = await Directory.findOne({
       _id: fileInfo.parentDirId,
     });
 
@@ -135,7 +134,7 @@ export const deleteFile = async (req, res) => {
       console.error(`Failed to delete physical file ${_id}:`, err),
     );
 
-    fileCollection.deleteOne({ _id });
+    await File.deleteOne({ _id });
 
     res.status(200).json({ message: 'File deleted successfully' });
   } catch (err) {

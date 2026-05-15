@@ -13,7 +13,6 @@ const fileSchema = new Schema(
   {
     timestamps: true,
     strict: 'throw',
-    collection: 'directories',
   },
 );
 

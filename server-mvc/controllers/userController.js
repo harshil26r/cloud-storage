@@ -6,7 +6,7 @@ import mongoose, { Types } from 'mongoose';
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email, password });
+  const user = await User.findOne({ email, password }).lean();
 
   if (!user) {
     return res.status(404).json({ error: 'Invalid Credentials' });
@@ -22,9 +22,7 @@ export const login = async (req, res) => {
 export const signup = async (req, res) => {
   const { username, email, password } = req.body;
 
-  const existingUser = await User.findOne({ email });
-
-  console.log(existingUser);
+  const existingUser = await User.findOne({ email }).lean();
 
   if (existingUser)
     return res.status(409).json({ error: 'Email id already Register!' });
@@ -39,6 +37,7 @@ export const signup = async (req, res) => {
     const rootDir = await Directory.create(
       [
         {
+          _id: rootDirId,
           name: 'root',
           parentDirId: null,
           userId,
@@ -47,16 +46,10 @@ export const signup = async (req, res) => {
       { session },
     );
     const createdUser = await User.create(
-      [
-        {
-          username,
-          email,
-          password,
-          rootDirId,
-        },
-      ],
+      [{ _id: userId, username, email, password, rootDirId }],
       { session },
     );
+
     session.commitTransaction();
 
     res

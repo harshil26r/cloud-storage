@@ -1,6 +1,4 @@
 import { Router } from 'express';
-import { createWriteStream } from 'fs';
-import { rm } from 'fs/promises';
 import fileUploadMiddleware from '../middleware/fileUpload.js';
 import {
   deleteFile,

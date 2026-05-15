@@ -1,19 +1,20 @@
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
+import { Directory } from '../models/directoryModel.js';
+import { File } from '../models/fileModel.js';
 
 export const getDirectory = async (req, res) => {
   try {
-    const { user, db } = req;
+    const { user } = req;
 
-    const _id = req.params.id ? new ObjectId(req.params.id) : user.rootDirId;
+    const _id = req.params.id ? req.params.id : user.rootDirId;
 
     if (!_id) {
       return res.status(400).json({ error: 'No directory ID provided' });
     }
-    const dirCollection = db.collection('directories');
-    const directoryData = await dirCollection.findOne({
+    const directoryData = await Directory.findOne({
       _id,
-      userId: user._id,
-    });
+      userId: user?._id,
+    }).lean();
 
     if (!directoryData) {
       return res
@@ -21,13 +22,8 @@ export const getDirectory = async (req, res) => {
         .json({ error: 'Directory not found for this user' });
     }
 
-    const files = await db
-      .collection('files')
-      .find({ parentDirId: _id })
-      .toArray();
-    const directories = await dirCollection
-      .find({ parentDirId: _id })
-      .toArray();
+    const files = await File.find({ parentDirId: _id }).lean();
+    const directories = await Directory.find({ parentDirId: _id }).lean();
 
     res.status(200).json({ ...directoryData, files, directories });
   } catch (err) {
@@ -39,9 +35,7 @@ export const creatDirectory = async (req, res) => {
   try {
     const { user, db } = req;
 
-    const parentDirId = req.params.parentDirId
-      ? new ObjectId(req.params.parentDirId)
-      : user.rootDirId;
+    const parentDirId = req.params.parentDirId;
     const dirName = req.body.dirName?.trim();
 
     if (!parentDirId) {
@@ -52,20 +46,19 @@ export const creatDirectory = async (req, res) => {
       return res.status(400).json({ error: 'Directory name is required' });
     }
 
-    // Verify parent directory exists
-    const dirCollection = db.collection('directories');
-
-    const parentDir = dirCollection.findOne({ _id: parentDirId });
+    const parentDir = Directory.findOne({ _id: parentDirId });
 
     if (!parentDir) {
       return res.status(404).json({ error: 'Parent directory not found' });
     }
 
-    const createdDir = await dirCollection.insertOne({
+    const createdDir = await Directory.create({
       name: dirName,
       userId: user._id,
       parentDirId,
     });
+
+    await createdDir.save();
 
     res.status(201).json({
       message: 'Directory created successfully',
@@ -78,8 +71,8 @@ export const creatDirectory = async (req, res) => {
 
 export const renameDirectory = async (req, res) => {
   try {
-    const { user, db } = req;
-    const _id = new ObjectId(req.params.id);
+    const { user } = req;
+    const _id = req.params.id;
     const newName = req.body.newName?.trim();
 
     if (!_id) {
@@ -89,8 +82,7 @@ export const renameDirectory = async (req, res) => {
     if (!newName) {
       return res.status(400).json({ error: 'New directory name is required' });
     }
-    const dirCollection = db.collection('directories');
-    const directoryData = await dirCollection.findOne({
+    const directoryData = await Directory.findOne({
       _id,
       userId: user._id,
     });
@@ -101,7 +93,7 @@ export const renameDirectory = async (req, res) => {
         .json({ error: 'Directory not found for this user!' });
     }
 
-    await dirCollection.updateOne({ _id }, { $set: { name: newName } });
+    await Directory.updateOne({ _id }, { $set: { name: newName } });
 
     res.status(200).json({ message: 'Directory renamed successfully' });
   } catch (err) {
@@ -110,25 +102,22 @@ export const renameDirectory = async (req, res) => {
 };
 
 export const deleteDirectory = async (req, res) => {
-  const session = client.startSession();
+  const session = await mongoose.startSession();
   try {
-    const { user, db } = req;
-    const _id = new ObjectId(req.params.id);
-
-    const directoriesCollection = db.collection('directories');
-    const filesCollection = db.collection('files');
+    const { user } = req;
+    const _id = req.params.id;
 
     // First find the target directory itself by _id
-    const targetDir = await directoriesCollection.findOne({ _id });
+    const targetDir = await Directory.findOne({ _id }).lean();
 
     if (!targetDir) {
       return res.status(404).json({ error: 'Directory not found' });
     }
 
     async function collectAllChildDirIds(parentId) {
-      const childDirs = await directoriesCollection
-        .find({ parentDirId: parentId })
-        .toArray();
+      const childDirs = await Directory.find({
+        parentDirId: parentId,
+      }).lean();
 
       let allIds = [parentId];
 
@@ -144,9 +133,9 @@ export const deleteDirectory = async (req, res) => {
     const allDirIds = await collectAllChildDirIds(targetDir._id);
 
     // Fetch all files before deleting to get their IDs and extensions
-    const allFiles = await filesCollection
-      .find({ parentDirId: { $in: allDirIds } })
-      .toArray();
+    const allFiles = await File.find({
+      parentDirId: { $in: allDirIds },
+    }).lean();
 
     // Delete actual files from storage
     await Promise.all(
@@ -156,7 +145,7 @@ export const deleteDirectory = async (req, res) => {
     session.startTransaction();
 
     // Delete file documents from DB
-    await filesCollection.deleteMany(
+    await File.deleteMany(
       {
         parentDirId: { $in: allDirIds },
       },
@@ -164,7 +153,7 @@ export const deleteDirectory = async (req, res) => {
     );
 
     // Delete all directories from DB
-    await directoriesCollection.deleteMany(
+    await Directory.deleteMany(
       {
         _id: { $in: allDirIds },
       },
