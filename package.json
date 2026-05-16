@@ -1,0 +1,23 @@
+{
+  "name": "cloud-storage",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "server-express",
+    "server-mongodb",
+    "server-mvc"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run start -w server-mvc\" \"npm run dev -w client\"",
+    "start:server": "npm run start -w server",
+    "start:server-express": "npm run start -w server-express",
+    "start:server-mongodb": "npm run start -w server-mongodb",
+    "start:server-mvc": "npm run start -w server-mvc",
+    "dev:client": "npm run dev -w client",
+    "clean": "rm -rf node_modules package-lock.json && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,5 +1,8 @@
 {
   "type": "module",
+  "scripts": {
+    "start": "node app.js"
+  },
   "dependencies": {
     "mime": "^4.1.0"
   }

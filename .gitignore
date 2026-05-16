@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -10,7 +9,11 @@ package-lock.json
 # Build outputs
 dist/
 build/
-*.log
+.next/
+
+# Database
+*.db
+*.db-journal
 
 # Environment variables
 .env
@@ -31,4 +34,3 @@ Thumbs.db
 
 # Storage files (optional - uncomment if you don't want to commit storage files)
 server/storage/
-
