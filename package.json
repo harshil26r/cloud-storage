@@ -6,18 +6,23 @@
     "server",
     "server-express",
     "server-mongodb",
-    "server-mvc"
+    "server-mvc",
+    "server-auth"
   ],
   "scripts": {
-    "dev": "concurrently -n server,client -c cyan,magenta \"npm run start -w server-mvc\" \"npm run dev -w client\"",
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run start -w server-auth\" \"npm run dev -w client\"",
     "start:server": "npm run start -w server",
     "start:server-express": "npm run start -w server-express",
     "start:server-mongodb": "npm run start -w server-mongodb",
     "start:server-mvc": "npm run start -w server-mvc",
+    "start:server-auth": "npm run start -w server-auth",
     "dev:client": "npm run dev -w client",
     "clean": "rm -rf node_modules package-lock.json && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
   }
 }
