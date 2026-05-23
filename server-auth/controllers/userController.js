@@ -13,6 +13,7 @@ export const login = async (req, res) => {
   if (!user) {
     return res.status(404).json({ error: 'Invalid Credentials' });
   }
+  // TODO:  change this to moodel user
   const validPass = await bcrypt.compare(password, user.password);
 
   if (!validPass) {
@@ -46,7 +47,7 @@ export const signup = async (req, res) => {
 
     const userId = new Types.ObjectId();
     const rootDirId = new Types.ObjectId();
-
+    // TODO: change this to model user
     const hasePassword = await bcrypt.hash(password, 10);
 
     const rootDir = await Directory.create(
