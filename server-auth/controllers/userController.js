@@ -1,30 +1,28 @@
 import { ObjectId } from 'mongodb';
 import { User } from '../models/userModel.js';
 import { Directory } from '../models/directoryModel.js';
+import { Session } from '../models/sessionModel.js';
 import mongoose, { Types } from 'mongoose';
 import { buffer } from 'node:stream/consumers';
-import bcrypt from 'bcrypt';
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email }).lean();
+  const user = await User.findOne({ email });
 
   if (!user) {
     return res.status(404).json({ error: 'Invalid Credentials' });
   }
-  // TODO:  change this to moodel user
-  const validPass = await bcrypt.compare(password, user.password);
+
+  const validPass = await user.comparePassword(password);
 
   if (!validPass) {
     return res.status(404).json({ error: 'Invalid Credentials' });
   }
 
-  const cookiePayload = JSON.stringify({
-    id: user._id.toString(),
-    expire: Math.floor(Date.now() / 1000) + 10,
-  });
-  res.cookie('token', Buffer.from(cookiePayload).toString('base64url'), {
+  const session = await Session.create({ userId: user.id });
+
+  res.cookie('sid', session.id, {
     maxAge: 60 * 1000 * 60 * 5,
     httpOnly: true,
     signed: true,
@@ -47,8 +45,6 @@ export const signup = async (req, res) => {
 
     const userId = new Types.ObjectId();
     const rootDirId = new Types.ObjectId();
-    // TODO: change this to model user
-    const hasePassword = await bcrypt.hash(password, 10);
 
     const rootDir = await Directory.create(
       [
@@ -62,7 +58,7 @@ export const signup = async (req, res) => {
       { session },
     );
     const createdUser = await User.create(
-      [{ _id: userId, username, email, password: hasePassword, rootDirId }],
+      [{ _id: userId, username, email, password, rootDirId }],
       { session },
     );
 
@@ -79,9 +75,22 @@ export const signup = async (req, res) => {
   }
 };
 
-export const logout = (req, res) => {
-  res.clearCookie('token');
+export const logout = async (req, res) => {
+  const { sid } = req.signedCookies;
+  await Session.findByIdAndDelete(sid);
+
+  res.clearCookie('sid');
   res.json({ message: 'User logged out successfully' });
+};
+
+export const logoutAll = async (req, res) => {
+  const { sid } = req.signedCookies;
+  const session = await Session.findById(sid);
+
+  await Session.deleteMany({ userId: session.userId });
+
+  res.clearCookie('sid');
+  res.json({ message: 'User logged out from all devices successfully' });
 };
 
 export const getUserDetails = (req, res) => {

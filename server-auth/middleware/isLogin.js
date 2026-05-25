@@ -1,25 +1,19 @@
 import { ObjectId } from 'mongodb';
 import { User } from '../models/userModel.js';
+import { Session } from '../models/sessionModel.js';
 
 const isLogin = async (req, res, next) => {
   const { db } = req;
-  const { token } = req.signedCookies;
+  const { sid } = req.signedCookies;
 
-  if (!token) {
-    res.clearCookie('token');
+  const session = await Session.findById(sid);
+
+  if (!sid || !session?.id) {
+    res.clearCookie('sid');
     return res.status(401).json({ error: 'Please Login First' });
   }
 
-  const { id, expire } = JSON.parse(Buffer.from(token, 'base64url').toString());
-
-  const currentTime = Math.floor(Date.now() / 1000);
-
-  if (expire < currentTime) {
-    res.clearCookie('token');
-    return res.status(401).json({ error: 'Please Login First' });
-  }
-
-  const foundUser = await User.findOne({ _id: id }).lean();
+  const foundUser = await User.findOne({ _id: session.userId }).lean();
 
   if (!foundUser) return res.status(404).json({ error: 'User Not Found!' });
 

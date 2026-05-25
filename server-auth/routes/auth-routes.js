@@ -4,6 +4,7 @@ import {
   getUserDetails,
   login,
   logout,
+  logoutAll,
   signup,
 } from '../controllers/userController.js';
 
@@ -14,6 +15,8 @@ authRouter.post('/login', login);
 authRouter.post('/signup', signup);
 
 authRouter.post('/logout', logout);
+
+authRouter.post('/logoutAll', logoutAll);
 
 authRouter.get('/user', isLogin, getUserDetails);
 
