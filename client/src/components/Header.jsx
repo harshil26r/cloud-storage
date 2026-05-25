@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
+import { getProfile, logout, logoutAll } from "../api";
 
 export default function Header({ viewMode, onViewChange }) {
   const [user, setUser] = useState(null);
@@ -10,15 +11,11 @@ export default function Header({ viewMode, onViewChange }) {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch(`${BASE_URL}auth/user`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const { data, statusText } = await getProfile();
+      if (statusText === "OK") {
         setUser(data);
       } else {
-        const error = await response.json();
-        showErrorToast(error.error);
+        showErrorToast(data.error);
         navigate("/login");
       }
     } catch (error) {
@@ -30,12 +27,8 @@ export default function Header({ viewMode, onViewChange }) {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${BASE_URL}auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (response.ok) {
+      const { data, statusText } = await logout();
+      if (statusText === "OK") {
         showSuccessToast(data.message);
         setTimeout(() => {
           navigate("/login");
@@ -51,12 +44,8 @@ export default function Header({ viewMode, onViewChange }) {
 
   const handleLogoutAll = async () => {
     try {
-      const response = await fetch(`${BASE_URL}auth/logoutAll`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (response.ok) {
+      const { data, statusText } = await logoutAll();
+      if (statusText === "OK") {
         showSuccessToast(data.message);
         setTimeout(() => {
           navigate("/login");

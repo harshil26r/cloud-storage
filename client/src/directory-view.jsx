@@ -8,6 +8,13 @@ import EmptyState from "./components/EmptyState";
 import RenameDialog from "./components/RenameDialog";
 import CreateFolderDialog from "./components/CreateFolderDialog";
 import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
+import { deleteFile, renameFile } from "./api/fileAPI";
+import {
+  createDirectory,
+  deleteDirectory,
+  getDirectories,
+  updateDirectory,
+} from "./api/directoryAPI";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -26,15 +33,11 @@ function DirectoryView() {
 
   const handleDelete = async (_id, isFile) => {
     try {
-      const response = await fetch(
-        `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-      const data = await response.json();
-      if (response.ok) {
+      const { data, statusText } = isFile
+        ? await deleteFile(_id)
+        : await deleteDirectory(_id);
+
+      if (statusText === "OK") {
         showSuccessToast(data.message);
       } else {
         showErrorToast(data.message || data.error);
@@ -61,26 +64,18 @@ function DirectoryView() {
     const newFile = `${newFileName.trim()}`;
 
     try {
-      const response = await fetch(
-        `${BASE_URL}${isFile ? "file" : "directory"}/${_id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ newName: newFile }),
-          credentials: "include",
-        },
-      );
-      const data = await response.json();
-      if (response.ok) {
+      const { data, statusText } = isFile
+        ? await renameFile(_id, newFile)
+        : await updateDirectory(_id, newFile);
+
+      if (statusText === "OK") {
         showSuccessToast(data.message);
       } else {
-        showErrorToast(data.message || data.error);
+        showErrorToast(data?.message || data?.error);
       }
       setNewFileName("");
       setRenamingItem(null);
-      getAllFiles(directoryId);
+      await getAllFiles(directoryId);
     } catch (error) {
       console.error("Error renaming:", error);
       showErrorToast(error.message);
@@ -88,17 +83,12 @@ function DirectoryView() {
   };
 
   const getAllFiles = async () => {
-    const response = await fetch(
-      `${BASE_URL}directory/${directoryId ? directoryId : ""}`,
-      {
-        method: "GET",
-        credentials: "include",
-      },
-    );
-    const result = await response.json();
-    setFileList(result?.files);
-    setDirectoryList(result?.directories);
-    setCurrentDir(result);
+    const { data, statusText } = await getDirectories(directoryId);
+    if (statusText === "OK") {
+      setFileList(data?.files);
+      setDirectoryList(data?.directories);
+      setCurrentDir(data);
+    }
   };
 
   const getUrl = (_id, isFile) => {
@@ -147,28 +137,18 @@ function DirectoryView() {
       return;
     }
     try {
-      const response = await fetch(
-        `${BASE_URL}directory/${directoryId || currentDir?._id}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            dirName: newFolderName,
-          }),
-          credentials: "include",
-        },
+      const { data, statusText } = await createDirectory(
+        newFolderName.trim(),
+        directoryId || currentDir?._id,
       );
-      const data = await response.json();
-      if (response.ok) {
+      if (statusText === "Created") {
         showSuccessToast(data.message);
       } else {
         showErrorToast(data.message || data.error);
       }
       setNewFolderName("");
       setShowCreateFolder(false);
-      getAllFiles();
+      await getAllFiles();
     } catch (error) {
       console.error("Error creating folder:", error);
       showErrorToast(error.message);

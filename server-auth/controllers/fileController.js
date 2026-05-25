@@ -65,6 +65,7 @@ export const renameFile = async (req, res) => {
     const { user } = req;
 
     const _id = req.params.id;
+    console.log(_id);
     const newName = req.body.newName?.trim();
 
     if (!_id) {
