@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
+import { signup } from "../api";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const [errors, setErrors] = useState({});
   const [data, setData] = useState({
@@ -81,19 +81,12 @@ const SignUp = () => {
   };
   const handleSubmit = async () => {
     try {
-      const res = await fetch(`${BASE_URL}auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-          isSubscribe: data.isSubscribe,
-          role: data.role,
-        }),
-      });
+      const res = await signup(
+        data.username,
+        data.email,
+        data.password,
+        data.cPassword,
+      );
 
       const response = await res.json();
 

@@ -30,10 +30,10 @@ export const createDirectory = async (name, parentDirId = null) => {
 
 // Update directory (rename)
 export const updateDirectory = async (directoryId, name) => {
-  const { data, statusText } = await axiosInstance.put(
+  const { data, statusText } = await axiosInstance.patch(
     `/directory/${directoryId}`,
     {
-      dirName: name,
+      newName: name,
     },
   );
   return { data, statusText };

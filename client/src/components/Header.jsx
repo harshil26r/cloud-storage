@@ -7,7 +7,6 @@ export default function Header({ viewMode, onViewChange }) {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const fetchUserInfo = async () => {
     try {

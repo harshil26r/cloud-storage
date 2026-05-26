@@ -9,7 +9,7 @@ export {
   changePassword,
   refreshToken,
   logoutAll,
-} from "./authAPI";
+} from "./userAPI";
 export {
   getDirectories,
   getDirectoryById,

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
+import { login } from "../api";
 
 const Login = () => {
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
-
   const navigate = useNavigate();
 
   const [data, setData] = useState({
@@ -24,28 +23,18 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${BASE_URL}auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-        credentials: "include",
-      });
+      const { data: loginData, statusText } = await login(
+        data.email,
+        data.password,
+      );
 
-      const response = await res.json();
-      console.log(response);
-
-      if (res.ok && response) {
-        showSuccessToast(response.message);
+      if (statusText === "OK") {
+        showSuccessToast(loginData.message);
         setTimeout(() => {
           navigate("/");
         }, 500);
       } else {
-        showErrorToast(response.error);
+        showErrorToast(loginData.error);
       }
     } catch (error) {
       console.error("Login error:", error);
