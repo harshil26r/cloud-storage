@@ -16,8 +16,4 @@ authRouter.post('/signup', signup);
 
 authRouter.post('/logout', logout);
 
-authRouter.post('/logoutAll', logoutAll);
-
-authRouter.get('/user', isLogin, getUserDetails);
-
 export default authRouter;

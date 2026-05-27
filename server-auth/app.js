@@ -6,6 +6,7 @@ import authRouter from './routes/auth-routes.js';
 import cookieParser from 'cookie-parser';
 import isLogin from './middleware/isLogin.js';
 import { connectDB } from './middleware/mongoConnect.js';
+import userRoutes from './routes/user-routes.js';
 
 const port = 4000;
 const app = express();
@@ -39,10 +40,10 @@ app.use('/directory', isLogin, dirRouter);
 // File routes
 app.use('/file', isLogin, fileRouter);
 
-// Auth routes
-app.use('/auth', authRouter);
+// User routes
+app.use('/user', userRoutes);
 
-// Globle Error Handler
+// Global Error Handler
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: `Something went wrong! ${err}` });
 });
