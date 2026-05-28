@@ -1,19 +1,11 @@
 import { Router } from 'express';
 import isLogin from '../middleware/isLogin.js';
-import {
-  getUserDetails,
-  login,
-  logout,
-  logoutAll,
-  signup,
-} from '../controllers/userController.js';
+import { sendOtp, verifyOtp } from '../controllers/authController.js';
 
 const authRouter = Router();
 
-authRouter.post('/login', login);
+authRouter.post('/send-otp', sendOtp);
 
-authRouter.post('/signup', signup);
-
-authRouter.post('/logout', logout);
+authRouter.post('/verify-otp', verifyOtp);
 
 export default authRouter;

@@ -43,6 +43,9 @@ app.use('/file', isLogin, fileRouter);
 // User routes
 app.use('/user', userRoutes);
 
+// Auth routes
+app.use('/auth', authRouter);
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: `Something went wrong! ${err}` });
