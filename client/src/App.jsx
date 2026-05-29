@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import DirectoryView from "./directory-view";
-import Login from "./components/login";
-import SignUp from "./components/signup";
+import Login from "./components/auth/login";
+import SignUp from "./components/auth/signup";
 import NotFound from "./components/NotFound";
 import { Toaster } from "react-hot-toast";
 

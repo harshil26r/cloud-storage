@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 export const sendEmail = async (email, subject, content) => {
   try {
     const mailOptions = {
-      from: process.env.SMTP_USER,
+      from: `Storage App <${process.env.SMTP_USER}>`,
       to: email,
       subject: subject,
       html: content,

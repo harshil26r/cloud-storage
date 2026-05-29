@@ -5,8 +5,8 @@ import BreadcrumbNav from "./components/BreadcrumbNav";
 import FileItem from "./components/FileItem";
 import FolderItem from "./components/FolderItem";
 import EmptyState from "./components/EmptyState";
-import RenameDialog from "./components/RenameDialog";
-import CreateFolderDialog from "./components/CreateFolderDialog";
+import RenameDialog from "./components/action/RenameDialog";
+import CreateFolderDialog from "./components/action/CreateFolderDialog";
 import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
 import { deleteFile, renameFile } from "./api/fileAPI";
 import {

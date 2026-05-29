@@ -1,4 +1,4 @@
-import ActionMenu from "./ActionMenu";
+import ActionMenu from "./action/ActionMenu";
 
 export default function FolderItem({
   item,
