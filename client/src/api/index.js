@@ -9,9 +9,8 @@ export {
   changePassword,
   refreshToken,
   logoutAll,
-  sendOtp,
-  verifyOtp,
 } from "./userAPI";
+export { sendOtp, verifyOtp } from "./authAPI";
 export {
   getDirectories,
   getDirectoryById,

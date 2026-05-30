@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import { login, sendOtp, verifyOtp } from "../../api";
 import OtpVerification from "./OtpVerification";
+import { GoogleLogin } from "@react-oauth/google";
+import { verifyGoogleToken } from "../../api/authAPI";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -77,6 +79,7 @@ const Login = () => {
       throw error;
     }
   };
+
   return (
     <>
       <div className="flex min-h-screen justify-center items-center flex-col w-full px-3  mb-5 lg:px-8">
@@ -152,6 +155,30 @@ const Login = () => {
                   </div>
                 </div>
               </form>
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  const tokenId = credentialResponse.credential;
+                  try {
+                    const { data, statusText } =
+                      await verifyGoogleToken(tokenId);
+                    if (statusText === "OK") {
+                      showSuccessToast("Login successful");
+                      setTimeout(() => {
+                        navigate("/");
+                      }, 500);
+                    } else {
+                      showErrorToast(data.error || "Google login failed");
+                    }
+                  } catch (error) {
+                    console.error("Google login error:", error);
+                    showErrorToast(error.message || "Google login failed");
+                  }
+                }}
+                onError={() => {
+                  console.log("Login Failed");
+                }}
+                useOneTap
+              />
             </>
           ) : (
             <>

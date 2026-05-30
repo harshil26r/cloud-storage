@@ -1,11 +1,11 @@
 export const emailTemplate = (otp) => {
-  return `<!-- Logto Sign-up Verification Email Template -->
+  return `<!-- Storage App Sign-up Verification Email Template -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verify your Logto sign-up</title>
+    <title>Verify your Storage App sign-up</title>
     <style>
       body {
         background: #f7f7fb;
@@ -54,15 +54,15 @@ export const emailTemplate = (otp) => {
       <div class="logo">
         <img
           src="https://user-images.githubusercontent.com/13031838/236635964-2e2e2e2e-2e2e-4e2e-8e2e-2e2e2e2e2e2e.png"
-          alt="Logto Logo"
+          alt="Storage App Logo"
           width="48"
           height="48"
         />
       </div>
-      <h2>Verify your Logto sign-up</h2>
+      <h2>Verify your Storage App sign-up</h2>
       <p>
         We have received a sign-up attempt with the following code. Please enter
-        it in the browser window where you started signing up for Logto.
+        it in the browser window where you started signing up for Storage App.
       </p>
       <div class="code-box">${otp}</div>
       <p style="color: #888">
@@ -70,7 +70,7 @@ export const emailTemplate = (otp) => {
         disregard it. The code will remain active for 10 minutes.
       </p>
       <div class="footer">
-        Logto, an effortless identity solution with all the features you need.
+        Storage App, an effortless identity solution with all the features you need.
         <div class="social-icons">
           <img
             src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png"
@@ -94,7 +94,7 @@ export const emailTemplate = (otp) => {
           />
         </div>
         <div style="margin-top: 12px; font-size: 0.9em">
-          © 2023 Logto. All rights reserved.
+          © 2023 Storage App. All rights reserved.
         </div>
       </div>
     </div>

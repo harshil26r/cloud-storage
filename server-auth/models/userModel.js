@@ -8,8 +8,23 @@ const userSchema = new Schema(
       trim: true,
       minLength: 3,
     },
-    email: { type: String, lowercase: true, trim: true, required: true },
-    password: { type: String, required: true, minLength: 3 },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      required: true,
+      unique: true,
+      match: [
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$/,
+        'please enter a valid email',
+      ],
+    },
+    password: { type: String, minLength: 3 },
+    picture: {
+      type: String,
+      default:
+        'https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg',
+    },
     rootDirId: { type: Schema.Types.ObjectId },
   },
   {

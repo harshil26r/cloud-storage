@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
 import { getProfile, logout, logoutAll } from "../api";
@@ -66,6 +66,8 @@ export default function Header({ viewMode, onViewChange }) {
     fetchUserInfo();
   }, []);
 
+  console.log(user);
+
   return (
     <header className="border-b border-gray-200 bg-white">
       <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -132,9 +134,18 @@ export default function Header({ viewMode, onViewChange }) {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
               >
-                <div className="w-8 h-8 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                  {user && getInitials(user.email)}
-                </div>
+                {" "}
+                {user?.picture ? (
+                  <img
+                    className="w-8 h-8 bg-linear-to-br rounded-full flex items-center justify-center"
+                    src={user?.picture}
+                    alt=""
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    {user && getInitials(user.email)}
+                  </div>
+                )}
                 <svg
                   className={`w-4 h-4 text-gray-600 transition-transform ${
                     showUserMenu ? "rotate-180" : ""

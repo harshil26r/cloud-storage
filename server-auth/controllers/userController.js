@@ -94,5 +94,9 @@ export const logoutAll = async (req, res) => {
 };
 
 export const getUserDetails = (req, res) => {
-  res.status(200).json({ email: req.user.email, username: req.user.username });
+  res.status(200).json({
+    email: req.user.email,
+    username: req.user.username,
+    picture: req?.user?.picture,
+  });
 };
