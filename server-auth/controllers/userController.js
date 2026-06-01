@@ -93,10 +93,14 @@ export const logoutAll = async (req, res) => {
   res.json({ message: 'User logged out from all devices successfully' });
 };
 
-export const getUserDetails = (req, res) => {
+export const getUserDetails = async (req, res) => {
+  const user = await User.findById(req.user._id).lean();
+
   res.status(200).json({
-    email: req.user.email,
-    username: req.user.username,
-    picture: req?.user?.picture,
+    email: user.email,
+    username: user.username,
+    picture: user.picture,
+    googleDriveConnected: !!user.googleAccessToken,
+    googleDriveRootDirId: user.googleDriveRootDirId,
   });
 };

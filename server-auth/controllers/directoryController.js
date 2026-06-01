@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { rm } from 'fs/promises';
 import { Directory } from '../models/directoryModel.js';
 import { File } from '../models/fileModel.js';
 
@@ -46,7 +47,7 @@ export const creatDirectory = async (req, res) => {
       return res.status(400).json({ error: 'Directory name is required' });
     }
 
-    const parentDir = Directory.findOne({ _id: parentDirId });
+    const parentDir = await Directory.findOne({ _id: parentDirId });
 
     if (!parentDir) {
       return res.status(404).json({ error: 'Parent directory not found' });

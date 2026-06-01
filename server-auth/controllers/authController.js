@@ -1,10 +1,15 @@
 import crypto from 'crypto';
+import mongoose, { Types } from 'mongoose';
 import { OTP } from '../models/optModel.js';
 import { sendEmail } from '../services/sentEmail.js';
 import { emailTemplate } from '../utils/emailTemplate.js';
-import { verifyGoogleToken } from '../services/googleAuth.js';
+import {
+  getGoogleDriveTokens,
+  verifyGoogleToken,
+} from '../services/googleAuth.js';
 import { User } from '../models/userModel.js';
 import { Session } from '../models/sessionModel.js';
+import { Directory } from '../models/directoryModel.js';
 
 export const sendOtp = async (req, res) => {
   try {
@@ -76,9 +81,12 @@ export const loginWithGoogle = async (req, res) => {
 
       if (!user.picture.includes('googleusercontent.com')) {
         user.picture = picture;
-        await user.save();
       }
-      user.save();
+      // Update Google ID if not present
+      if (!user.googleId) {
+        user.googleId = sub;
+      }
+      await user.save();
 
       res.cookie('sid', session.id, {
         maxAge: 60 * 1000 * 60 * 5,
@@ -86,12 +94,13 @@ export const loginWithGoogle = async (req, res) => {
         signed: true,
       });
 
-      res.json({ message: 'User login Sucessfully' });
+      return res.json({ message: 'User login Successfully' });
     }
 
-    const session = await mongoose.startSession();
+    // Create new user
+    const mongooseSession = await mongoose.startSession();
     try {
-      session.startTransaction();
+      mongooseSession.startTransaction();
 
       const userId = new Types.ObjectId();
       const rootDirId = new Types.ObjectId();
@@ -103,37 +112,108 @@ export const loginWithGoogle = async (req, res) => {
             name: 'root',
             parentDirId: null,
             userId,
-            picture,
           },
         ],
-        { session },
+        { session: mongooseSession },
       );
+
       const createdUser = await User.create(
-        [{ _id: userId, username, email, password, rootDirId }],
-        { session },
+        [
+          {
+            _id: userId,
+            username: name,
+            email,
+            picture,
+            googleId: sub,
+            rootDirId,
+          },
+        ],
+        { session: mongooseSession },
       );
 
-      const session = await Session.create({ userId: user.id });
+      const dbSession = await Session.create({ userId });
 
-      res.cookie('sid', session.id, {
+      await mongooseSession.commitTransaction();
+
+      res.cookie('sid', dbSession.id, {
         maxAge: 60 * 1000 * 60 * 5,
         httpOnly: true,
         signed: true,
       });
 
-      session.commitTransaction();
-
       res.status(201).json({
-        message: `User Register and Login Succesfully with email ${email}`,
+        message: `User registered and logged in successfully with email ${email}`,
       });
     } catch (error) {
-      session.abortTransaction();
-      res.status(500).json({ message: error });
+      await mongooseSession.abortTransaction();
+      res.status(500).json({ message: error.message });
     } finally {
-      session.endSession();
+      await mongooseSession.endSession();
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Connect Google Drive to user account
+ * Exchanges auth code for access and refresh tokens
+ */
+export const connectGoogleDrive = async (req, res) => {
+  try {
+    const { user } = req;
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code is required' });
     }
 
-    res.status(200).json({ message: 'Google login successful' });
+    const { tokens } = await getGoogleDriveTokens(code);
+
+    if (!tokens.access_token) {
+      throw new Error('Failed to obtain access token');
+    }
+
+    // Update user with tokens
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      {
+        googleAccessToken: tokens.access_token,
+        googleRefreshToken: tokens.refresh_token,
+      },
+      { new: true },
+    );
+
+    res.status(200).json({
+      message: 'Google Drive connected successfully',
+      googleDriveConnected: true,
+      requiresSetup: !updatedUser.googleDriveRootDirId,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Disconnect Google Drive from user account
+ * Revokes tokens and removes connection
+ */
+export const disconnectGoogleDrive = async (req, res) => {
+  try {
+    const { user } = req;
+
+    // Clear Google Drive tokens
+    await User.findByIdAndUpdate(user._id, {
+      $unset: {
+        googleAccessToken: '',
+        googleRefreshToken: '',
+      },
+    });
+
+    res.status(200).json({
+      message: 'Google Drive disconnected successfully',
+      googleDriveConnected: false,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

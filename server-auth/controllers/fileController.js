@@ -1,6 +1,8 @@
 import { File } from '../models/fileModel.js';
 import { Directory } from '../models/directoryModel.js';
+import { User } from '../models/userModel.js';
 import { rm } from 'fs/promises';
+import { getGoogleFileStream } from '../services/googleDriveService.js';
 
 export const serveFile = async (req, res) => {
   try {
@@ -15,14 +17,48 @@ export const serveFile = async (req, res) => {
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
     }
+
     const parentDir = await Directory.findOne({
       _id: fileInfo.parentDirId,
     });
 
-    if (parentDir?.userId.toString() !== user._id.toString())
+    if (parentDir?.userId.toString() !== user._id.toString()) {
       return res
         .status(401)
         .json({ error: "You don't have permission to preview this file!" });
+    }
+
+    const isGoogleOnline =
+      fileInfo.googleId &&
+      fileInfo.syncState !== 'offline' &&
+      fileInfo.storageMode !== 'offline';
+
+    if (isGoogleOnline) {
+      const userData = await User.findById(user._id).lean();
+      if (!userData?.googleAccessToken) {
+        return res.status(400).json({ error: 'Google Drive not connected' });
+      }
+
+      const stream = await getGoogleFileStream(
+        fileInfo.googleId,
+        userData.googleAccessToken,
+        userData.googleRefreshToken,
+        user._id,
+      );
+
+      if (req.query.action === 'download') {
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${fileInfo.name}"`,
+        );
+      }
+
+      res.setHeader(
+        'Content-Type',
+        fileInfo.mimeType || 'application/octet-stream',
+      );
+      return stream.pipe(res);
+    }
 
     if (req.query.action === 'download') {
       res.setHeader(
@@ -65,7 +101,6 @@ export const renameFile = async (req, res) => {
     const { user } = req;
 
     const _id = req.params.id;
-    console.log(_id);
     const newName = req.body.newName?.trim();
 
     if (!_id) {
@@ -86,10 +121,11 @@ export const renameFile = async (req, res) => {
       _id: fileInfo.parentDirId,
     });
 
-    if (parentDir?.userId.toString() !== user._id.toString())
+    if (parentDir?.userId.toString() !== user._id.toString()) {
       return res
         .status(401)
         .json({ error: "You don't have permission to perform this action!" });
+    }
 
     await File.updateOne({ _id }, { $set: { name: newName } });
 
@@ -101,7 +137,7 @@ export const renameFile = async (req, res) => {
 
 export const deleteFile = async (req, res) => {
   try {
-    const { user, db } = req;
+    const { user } = req;
     const _id = req.params.id;
 
     if (!_id) {
@@ -128,7 +164,6 @@ export const deleteFile = async (req, res) => {
         .json({ error: "You don't have permission to perform this action!" });
     }
 
-    // Remove physical file
     await rm(`./storage/${_id}${fileInfo.extension}`, {
       force: true,
     }).catch((err) =>
