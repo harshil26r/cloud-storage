@@ -3,8 +3,10 @@ import cors from 'cors';
 import dirRouter from './routes/directory-routes.js';
 import fileRouter from './routes/files-routes.js';
 import authRouter from './routes/auth-routes.js';
+import googleDriveRouter from './routes/google-drive-routes.js';
 import cookieParser from 'cookie-parser';
 import isLogin from './middleware/isLogin.js';
+import refreshTokenMiddleware from './middleware/refreshToken.js';
 import { connectDB } from './middleware/mongoConnect.js';
 import userRoutes from './routes/user-routes.js';
 
@@ -34,6 +36,10 @@ app.use((req, res, next) => {
   express.static('storage')(req, res, next); // serve public folder
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({ error: `Something went wrong! ${err}` });
+});
 // Directory routes
 app.use('/directory', isLogin, dirRouter);
 
@@ -46,10 +52,8 @@ app.use('/user', userRoutes);
 // Auth routes
 app.use('/auth', authRouter);
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  res.status(err.status || 500).json({ error: `Something went wrong! ${err}` });
-});
+// Google Drive routes
+app.use('/google-drive', isLogin, refreshTokenMiddleware, googleDriveRouter);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

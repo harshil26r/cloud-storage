@@ -26,6 +26,22 @@ const userSchema = new Schema(
         'https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg',
     },
     rootDirId: { type: Schema.Types.ObjectId },
+    // Google Drive fields
+    googleId: { type: String },
+    googleAccessToken: { type: String },
+    googleRefreshToken: { type: String },
+    googleDriveSyncPreference: {
+      type: String,
+      enum: ['metadata_only', 'full_file'],
+      default: 'metadata_only',
+    },
+    rootGoogleDriveName: {
+      type: String,
+      default: 'Google Drive',
+    },
+    googleDriveRootDirId: { type: Schema.Types.ObjectId },
+    lastSyncTime: { type: Date },
+    googleDriveSyncToken: { type: String },
   },
   {
     timestamps: true,
