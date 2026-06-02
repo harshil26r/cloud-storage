@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import Header from "./components/Header";
 import BreadcrumbNav from "./components/BreadcrumbNav";
@@ -15,6 +15,12 @@ import {
   getDirectories,
   updateDirectory,
 } from "./api/directoryAPI";
+import {
+  deleteGoogleFile,
+  makeFileOffline,
+  uploadToGoogleDrive,
+} from "./api/googleDriveAPI";
+import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -31,16 +37,43 @@ function DirectoryView() {
 
   let { directoryId } = useParams();
 
-  const handleDelete = async (_id, isFile) => {
-    try {
-      const { data, statusText } = isFile
-        ? await deleteFile(_id)
-        : await deleteDirectory(_id);
+  const isGoogleDriveFolder = !!currentDir?.googleId;
 
-      if (statusText === "OK") {
-        showSuccessToast(data.message);
+  const getAllFiles = useCallback(async () => {
+    const { data, statusText } = await getDirectories(directoryId);
+    if (statusText === "OK") {
+      setFileList(data?.files);
+      setDirectoryList(data?.directories);
+      setCurrentDir(data);
+    }
+  }, [directoryId]);
+
+  const handleDelete = async (_id, isFile, item) => {
+    try {
+      if (isFile && item?.googleId) {
+        const deleteLocal =
+          item.syncState === "offline" || item.storageMode === "offline";
+        const confirmMsg = deleteLocal
+          ? "Delete this file from Google Drive and remove the local copy?"
+          : "Delete this file from Google Drive?";
+        if (!window.confirm(confirmMsg)) return;
+
+        const { data, statusText } = await deleteGoogleFile(_id, deleteLocal);
+        if (statusText === "OK") {
+          showSuccessToast(data.message);
+        } else {
+          showErrorToast(data.error || data.message);
+        }
       } else {
-        showErrorToast(data.message || data.error);
+        const { data, statusText } = isFile
+          ? await deleteFile(_id)
+          : await deleteDirectory(_id);
+
+        if (statusText === "OK") {
+          showSuccessToast(data.message);
+        } else {
+          showErrorToast(data.message || data.error);
+        }
       }
     } catch (error) {
       console.error("Error deleting:", error);
@@ -75,19 +108,10 @@ function DirectoryView() {
       }
       setNewFileName("");
       setRenamingItem(null);
-      await getAllFiles(directoryId);
+      await getAllFiles();
     } catch (error) {
       console.error("Error renaming:", error);
       showErrorToast(error.message);
-    }
-  };
-
-  const getAllFiles = async () => {
-    const { data, statusText } = await getDirectories(directoryId);
-    if (statusText === "OK") {
-      setFileList(data?.files);
-      setDirectoryList(data?.directories);
-      setCurrentDir(data);
     }
   };
 
@@ -95,11 +119,61 @@ function DirectoryView() {
     return `${isFile ? `${BASE_URL}file` : "/directory"}/${_id}`;
   };
 
+  const handleOpenFile = (item) => {
+    window.open(getUrl(item._id, true) + "?action=open");
+  };
+
+  const handleDownloadFile = (item) => {
+    window.location.href = getUrl(item._id, true) + "?action=download";
+  };
+
+  const handleMakeOffline = async (item) => {
+    try {
+      const { data, statusText } = await makeFileOffline(item._id);
+      if (statusText === "OK" || statusText === "Accepted") {
+        showSuccessToast(data.message);
+        getAllFiles();
+      } else {
+        showErrorToast(data.error || "Failed to start download");
+      }
+    } catch (error) {
+      showErrorToast(error.message);
+    }
+  };
+
+  const handleOpenInDrive = (item) => {
+    if (item.webViewLink) {
+      window.open(item.webViewLink, "_blank");
+    }
+  };
+
   const uploadFileInCurrentDir = async (e) => {
     const file = e.target.files[0];
+    const parentId = directoryId || currentDir?._id;
+
+    if (isGoogleDriveFolder) {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("parentDirId", parentId);
+
+      try {
+        const { data, statusText } = await uploadToGoogleDrive(form);
+        if (statusText === "Created") {
+          showSuccessToast(data.message);
+        } else {
+          showErrorToast(data.error || "Upload failed");
+        }
+      } catch (error) {
+        showErrorToast(error.message);
+      }
+      getAllFiles();
+      e.target.value = "";
+      return;
+    }
+
     const form = new FormData();
     form.append("file", file);
-    form.append("parentDirId", directoryId || currentDir?._id);
+    form.append("parentDirId", parentId);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${BASE_URL}file/`, true);
     xhr.withCredentials = true;
@@ -123,10 +197,6 @@ function DirectoryView() {
     });
     xhr.addEventListener("error", () => {
       showErrorToast("Upload error occurred");
-    });
-    xhr.upload.addEventListener("progress", (e) => {
-      const totalProgress = (e.loaded / e.total) * 100;
-      console.log(totalProgress);
     });
     xhr.send(form);
   };
@@ -155,27 +225,56 @@ function DirectoryView() {
     }
   };
 
+  const fileItemProps = (item) => ({
+    item,
+    onOpen: () => handleOpenFile(item),
+    onDownload: () => handleDownloadFile(item),
+    onRename: () => handleRename(item?.name, item?._id, true),
+    onDelete: () => handleDelete(item?._id, true, item),
+    onMakeOffline: () => handleMakeOffline(item),
+    onOpenInDrive: () => handleOpenInDrive(item),
+    onStatusChange: getAllFiles,
+  });
+
   useEffect(() => {
     getAllFiles();
-  }, [directoryId]);
+  }, [getAllFiles]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header viewMode={viewMode} onViewChange={setViewMode} />
+    <div className="min-h-screen bg-slate-50">
+      <Header
+        viewMode={viewMode}
+        onViewChange={setViewMode}
+        onSyncComplete={getAllFiles}
+      />
 
-      <main className="px-4 sm:px-6 lg:px-8 py-6">
-        {/* Top Action Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {isGoogleDriveFolder && (
+          <div className="mb-5 flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-50 via-white to-amber-50 px-4 py-3 ring-1 ring-blue-100">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+              <GoogleDriveLogo className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-slate-900">
+                Browsing Google Drive
+              </p>
+              <p className="text-xs text-slate-500">
+                Files here sync with your connected Google account
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <BreadcrumbNav
             currentDir={currentDir}
             onBack={() => navigate(`/directory/${currentDir.parentDirId}`)}
           />
 
-          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowCreateFolder(true)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow"
             >
               <svg
                 className="w-4 h-4 mr-2"
@@ -190,9 +289,15 @@ function DirectoryView() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              New Folder
+              New folder
             </button>
-            <label className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 cursor-pointer transition-colors">
+            <label
+              className={`inline-flex cursor-pointer items-center rounded-lg px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all hover:shadow ${
+                isGoogleDriveFolder
+                  ? "bg-[#1a73e8] hover:bg-[#1557b0]"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"
@@ -206,7 +311,7 @@ function DirectoryView() {
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              Upload
+              {isGoogleDriveFolder ? "Upload to Drive" : "Upload"}
               <input
                 type="file"
                 onChange={uploadFileInCurrentDir}
@@ -216,7 +321,6 @@ function DirectoryView() {
           </div>
         </div>
 
-        {/* Dialogs */}
         <CreateFolderDialog
           isOpen={showCreateFolder}
           name={newFolderName}
@@ -230,7 +334,7 @@ function DirectoryView() {
 
         <RenameDialog
           isOpen={!!renamingItem}
-          itemName={renamingItem?._id}
+          itemName={renamingItem?.isFile ? newFileName : renamingItem?._id}
           name={newFileName}
           onNameChange={setNewFileName}
           onSave={handleSaveFileName}
@@ -240,16 +344,14 @@ function DirectoryView() {
           }}
         />
 
-        {/* Content Area */}
         {fileList?.length === 0 && directoryList?.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            {/* List View - Desktop */}
             {viewMode === "list" && (
-              <div className="hidden md:block overflow-x-auto min-h-lvh bg-white border border-gray-200 rounded-lg">
+              <div className="hidden min-h-lvh overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="border-b border-slate-100 bg-slate-50/80">
                     <tr>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                         Name
@@ -281,19 +383,8 @@ function DirectoryView() {
                     {fileList?.map((item, index) => (
                       <FileItem
                         key={`file-${index}`}
-                        item={item}
                         viewMode="list"
-                        onOpen={() =>
-                          window.open(getUrl(item?._id, true) + "?action=open")
-                        }
-                        onDownload={() =>
-                          (window.location.href =
-                            getUrl(item?._id, true) + "?action=download")
-                        }
-                        onRename={() =>
-                          handleRename(item?.name, item?._id, true)
-                        }
-                        onDelete={() => handleDelete(item?._id, true)}
+                        {...fileItemProps(item)}
                       />
                     ))}
                   </tbody>
@@ -301,7 +392,6 @@ function DirectoryView() {
               </div>
             )}
 
-            {/* Grid View */}
             {viewMode === "grid" && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {directoryList?.map((item, index) => (
@@ -317,23 +407,13 @@ function DirectoryView() {
                 {fileList?.map((item, index) => (
                   <FileItem
                     key={`file-grid-${index}`}
-                    item={item}
                     viewMode="grid"
-                    onOpen={() =>
-                      window.open(getUrl(item?._id, true) + "?action=open")
-                    }
-                    onDownload={() =>
-                      (window.location.href =
-                        getUrl(item?._id, true) + "?action=download")
-                    }
-                    onRename={() => handleRename(item?.name, item?._id, true)}
-                    onDelete={() => handleDelete(item?._id, true)}
+                    {...fileItemProps(item)}
                   />
                 ))}
               </div>
             )}
 
-            {/* Mobile Card View */}
             <div className="md:hidden space-y-3">
               {directoryList?.map((item, index) => (
                 <div
@@ -354,7 +434,9 @@ function DirectoryView() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {item?.name}
                         </p>
-                        <p className="text-xs text-gray-500">Folder</p>
+                        <p className="text-xs text-gray-500">
+                          {item?.googleId ? "Google Drive Folder" : "Folder"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -402,28 +484,33 @@ function DirectoryView() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {item?.name}
                         </p>
-                        <p className="text-xs text-gray-500">File</p>
+                        <p className="text-xs text-gray-500">
+                          {item?.googleId ? "Google Drive" : "File"}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() =>
-                        window.open(getUrl(item?._id, true) + "?action=open")
-                      }
+                      onClick={() => handleOpenFile(item)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors text-center"
                     >
                       Open
                     </button>
                     <button
-                      onClick={() =>
-                        (window.location.href =
-                          getUrl(item?._id, true) + "?action=download")
-                      }
+                      onClick={() => handleDownloadFile(item)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors text-center"
                     >
                       Download
                     </button>
+                    {item?.googleId && item?.syncState === "online_only" && (
+                      <button
+                        onClick={() => handleMakeOffline(item)}
+                        className="flex-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors text-center"
+                      >
+                        Offline
+                      </button>
+                    )}
                     <button
                       onClick={() => handleRename(item?.name, item?._id, true)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
@@ -431,7 +518,7 @@ function DirectoryView() {
                       Rename
                     </button>
                     <button
-                      onClick={() => handleDelete(item?._id, true)}
+                      onClick={() => handleDelete(item?._id, true, item)}
                       className="flex-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
                     >
                       Delete

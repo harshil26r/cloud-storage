@@ -45,3 +45,19 @@ export const verifyGoogleToken = async (tokenId) => {
     throw new Error(errorMessage);
   }
 };
+
+export const getGoogleDriveData = async (code) => {
+  try {
+    const { data, statusText } = await axiosInstance.post(
+      "/auth/google-drive",
+      {
+        code,
+      },
+    );
+    return { data, statusText, error: null };
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.error || error.message || "Google login failed";
+    throw new Error(errorMessage);
+  }
+};

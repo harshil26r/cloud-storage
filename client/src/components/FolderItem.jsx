@@ -1,4 +1,5 @@
 import ActionMenu from "./action/ActionMenu";
+import { FolderDriveIcon } from "./GoogleDrive/icons";
 
 export default function FolderItem({
   item,
@@ -7,19 +8,30 @@ export default function FolderItem({
   onRename,
   onDelete,
 }) {
+  const isGoogleFolder = !!item?.googleId;
+  const modifiedDate = item?.modifiedAt || item?.modified;
+
   return viewMode === "grid" ? (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col cursor-pointer"
+      className={`group flex cursor-pointer flex-col rounded-xl border bg-white p-4 transition-all hover:shadow-md ${
+        isGoogleFolder
+          ? "border-amber-100 hover:border-amber-200"
+          : "border-slate-200 hover:border-slate-300"
+      }`}
       onDoubleClick={onOpen}
     >
-      <div className="flex items-start justify-between mb-3">
-        <svg
-          className="w-10 h-10 text-yellow-500 shrink-0"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-        </svg>
+      <div className="mb-3 flex items-start justify-between">
+        {isGoogleFolder ? (
+          <FolderDriveIcon className="h-10 w-10 shrink-0" />
+        ) : (
+          <svg
+            className="h-10 w-10 shrink-0 text-amber-400"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+          </svg>
+        )}
         <ActionMenu
           item={item}
           isFile={false}
@@ -28,37 +40,51 @@ export default function FolderItem({
           onDelete={onDelete}
         />
       </div>
-      <p className="text-sm font-medium text-gray-900 truncate mb-1 flex-1">
+      <p className="mb-1 flex-1 truncate text-sm font-medium text-slate-900">
         {item?.name}
       </p>
-      <p className="text-xs text-gray-500">
-        {item?.modified ? new Date(item.modified).toLocaleDateString() : "-"}
+      <p className="text-xs text-slate-400">
+        {isGoogleFolder ? "Google Drive" : "Folder"}
       </p>
     </div>
   ) : (
     <tr
       onDoubleClick={onOpen}
-      className="hover:bg-gray-50 transition-colors border-b border-gray-200"
+      className={`cursor-pointer border-b transition-colors ${
+        isGoogleFolder ? "hover:bg-amber-50/40" : "hover:bg-slate-50"
+      }`}
     >
-      <td className="px-6 py-4">
-        <div className="flex items-center space-x-3">
-          <svg
-            className="w-5 h-5 text-yellow-500"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
-          <span className="text-sm font-medium text-gray-900">
+      <td className="px-6 py-3.5">
+        <div className="flex items-center gap-3">
+          {isGoogleFolder ? (
+            <FolderDriveIcon className="h-5 w-5 shrink-0" />
+          ) : (
+            <svg
+              className="h-5 w-5 shrink-0 text-amber-400"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+          )}
+          <span className="text-sm font-medium text-slate-900">
             {item?.name}
           </span>
         </div>
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600">
-        {item?.modified ? new Date(item.modified).toLocaleDateString() : "-"}
+      <td className="px-6 py-3.5 text-sm text-slate-500">
+        {modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "—"}
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600">Folder</td>
-      <td className="px-6 py-4 text-center">
+      <td className="px-6 py-3.5">
+        {isGoogleFolder ? (
+          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 ring-inset">
+            Drive
+          </span>
+        ) : (
+          <span className="text-sm text-slate-500">Folder</span>
+        )}
+      </td>
+      <td className="px-6 py-3.5 text-center">
         <ActionMenu
           item={item}
           isFile={false}

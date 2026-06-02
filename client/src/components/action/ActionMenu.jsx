@@ -1,13 +1,21 @@
 import { useState } from "react";
 
 export default function ActionMenu({
+  item,
   isFile,
   onOpen,
   onDownload,
   onRename,
   onDelete,
+  onMakeOffline,
+  onOpenInDrive,
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const isGoogleFile = isFile && item?.googleId;
+  const isOnlineOnly =
+    isGoogleFile &&
+    item?.syncState === "online_only" &&
+    item?.storageMode !== "offline";
 
   const toggleMenu = (e) => {
     e.stopPropagation();
@@ -19,33 +27,37 @@ export default function ActionMenu({
     action();
   };
 
+  const menuItemClass =
+    "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors";
+
   return (
     <div className="relative inline-block">
       <button
         onClick={toggleMenu}
-        className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
         title="More options"
       >
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10.5 1.5H9.5V3h1V1.5zM10.5 16h1v1.5h-1V16zM16 9.5v1h1.5v-1H16zM1.5 10.5H3v-1H1.5v1z" />
-          <circle cx="10" cy="10" r="1.5" />
-          <circle cx="15" cy="10" r="1.5" />
-          <circle cx="5" cy="10" r="1.5" />
+        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
         </svg>
       </button>
 
       {isOpen && (
-        <div
-          className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="py-1">
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => handleAction(onOpen)}
-              className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+              className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
             >
               <svg
-                className="w-4 h-4 mr-3"
+                className="h-4 w-4 text-blue-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -63,10 +75,10 @@ export default function ActionMenu({
             {isFile && (
               <button
                 onClick={() => handleAction(onDownload)}
-                className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center"
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
               >
                 <svg
-                  className="w-4 h-4 mr-3"
+                  className="h-4 w-4 text-emerald-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -82,12 +94,56 @@ export default function ActionMenu({
               </button>
             )}
 
+            {isOnlineOnly && onMakeOffline && (
+              <button
+                onClick={() => handleAction(onMakeOffline)}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+              >
+                <svg
+                  className="h-4 w-4 text-indigo-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 004 4h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                Save offline
+              </button>
+            )}
+
+            {isGoogleFile && item?.webViewLink && onOpenInDrive && (
+              <button
+                onClick={() => handleAction(onOpenInDrive)}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+              >
+                <svg
+                  className="h-4 w-4 text-[#1a73e8]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                Open in Drive
+              </button>
+            )}
+
             <button
               onClick={() => handleAction(onRename)}
-              className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center"
+              className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
             >
               <svg
-                className="w-4 h-4 mr-3"
+                className="h-4 w-4 text-slate-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -102,14 +158,14 @@ export default function ActionMenu({
               Rename
             </button>
 
-            <div className="border-t border-gray-200 my-1"></div>
+            <div className="my-1 border-t border-slate-100" />
 
             <button
               onClick={() => handleAction(onDelete)}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+              className={`${menuItemClass} text-red-600 hover:bg-red-50`}
             >
               <svg
-                className="w-4 h-4 mr-3"
+                className="h-4 w-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -124,11 +180,7 @@ export default function ActionMenu({
               Delete
             </button>
           </div>
-        </div>
-      )}
-
-      {isOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+        </>
       )}
     </div>
   );

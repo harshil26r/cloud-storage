@@ -31,3 +31,16 @@ export {
   getFileMetadata,
   deleteMultipleFile,
 } from "./fileAPI";
+export {
+  connectGoogleDrive,
+  disconnectGoogleDrive,
+  initializeGoogleDriveStorage,
+  syncGoogleDrive,
+  getSyncStatus,
+  getGoogleDrivePreferences,
+  updateGoogleDrivePreferences,
+  makeFileOffline,
+  getFileSyncState,
+  streamGoogleFile,
+  deleteGoogleFile,
+} from "./googleDriveAPI";
