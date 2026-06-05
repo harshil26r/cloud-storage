@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import { signup, sendOtp, verifyOtp } from "../../api";
 import OtpVerification from "./OtpVerification";
+import { GoogleLogin } from "@react-oauth/google";
+import { verifyGoogleToken } from "../../api/authAPI";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -97,7 +99,7 @@ const SignUp = () => {
       setStep("otp");
     } catch (error) {
       console.error("Send OTP error:", error);
-      showErrorToast(error.message || "Failed to send OTP");
+      showErrorToast(error.message);
     } finally {
       setLoading(false);
     }
@@ -106,14 +108,12 @@ const SignUp = () => {
   const handleVerifyOtp = async (otpCode) => {
     try {
       await verifyOtp(data.email, otpCode);
-      showSuccessToast("OTP verified successfully");
-
-      // Now complete the signup
+      // Don't show OTP success toast yet, wait for signup to complete
       await handleCompleteSignup();
+      // If signup succeeds, handleCompleteSignup will show success toast
     } catch (error) {
-      console.error("Verify OTP error:", error);
-      showErrorToast(error.message || "Invalid OTP");
-      throw error;
+      console.error("OTP/Signup error:", error);
+      showErrorToast(error.message);
     }
   };
 
@@ -123,30 +123,24 @@ const SignUp = () => {
       showSuccessToast("OTP resent successfully");
     } catch (error) {
       console.error("Resend OTP error:", error);
-      showErrorToast(error.message || "Failed to resend OTP");
-      throw error;
+      showErrorToast(error.message);
     }
   };
 
   const handleCompleteSignup = async () => {
     try {
-      const res = await signup({
+      const { data: signupData } = await signup({
         username: data.username,
         email: data.email,
         password: data.password,
       });
-
-      if (res.statusText === "Created") {
-        showSuccessToast(res.data.message);
-        setTimeout(() => {
-          navigate("/login");
-        }, 500);
-      } else {
-        showErrorToast(res.data.error || "Registration failed");
-      }
+      showSuccessToast(signupData.message || "Registration successful");
+      setTimeout(() => {
+        navigate("/login");
+      }, 500);
     } catch (error) {
       console.error("Signup error:", error);
-      showErrorToast(error.message || "Registration failed");
+      showErrorToast(error.message);
     }
   };
   return (
@@ -272,6 +266,7 @@ const SignUp = () => {
                     Subscribe to our newsletter
                   </p>
                 </div>
+
                 <div className="mt-2 text-gray-500">
                   Your personal data will be used to support your experience
                   throughout this website, to manage access to your account, and
@@ -284,13 +279,40 @@ const SignUp = () => {
                   </Link>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex justify-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Sending OTP..." : "Register"}
-                </button>
+                {/* Register and Google Login Buttons - Centered */}
+                <div className="flex justify-center gap-3 mt-6 mx-auto">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex justify-center rounded-md bg-blue-700 px-6 py-2 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Sending OTP..." : "Register"}
+                  </button>
+                  <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                      const tokenId = credentialResponse.credential;
+                      try {
+                        const { statusText } = await verifyGoogleToken(tokenId);
+                        if (statusText === "OK") {
+                          showSuccessToast("Google login successful");
+                          setTimeout(() => {
+                            navigate("/");
+                          }, 500);
+                        }
+                      } catch (error) {
+                        console.error("Google login error:", error);
+                        showErrorToast(error.message || "Google login failed");
+                      }
+                    }}
+                    onError={() => {
+                      console.log("Login Failed");
+                    }}
+                    size="large"
+                    theme="outline"
+                    logo_alignment="center"
+                  />
+                </div>
+
                 <div className="mt-4 text-center text-gray-500">
                   Already have an account?{" "}
                   <Link

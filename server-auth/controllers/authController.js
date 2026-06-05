@@ -133,9 +133,7 @@ export const loginWithGoogle = async (req, res) => {
       session.endSession();
     }
 
-    res
-      .status(200)
-      .json({ message: 'Google login successful', user: userInfo });
+    res.status(200).json({ message: 'Google login successful' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -41,9 +41,13 @@ const Login = () => {
 
       if (statusText === "OK") {
         // Send OTP for second factor verification
-        await sendOtp(data.email);
-        showSuccessToast("OTP sent to your email");
-        setStep("otp");
+        try {
+          await sendOtp(data.email);
+          showSuccessToast("OTP sent to your email");
+          setStep("otp");
+        } catch (otpError) {
+          showErrorToast(otpError.message);
+        }
       } else {
         showErrorToast(loginData.error || "Login failed");
       }
@@ -57,11 +61,13 @@ const Login = () => {
 
   const handleVerifyOtp = async (otpCode) => {
     try {
-      await verifyOtp(data.email, otpCode);
-      showSuccessToast("Login successful");
-      setTimeout(() => {
-        navigate("/");
-      }, 500);
+      const { statusText } = await verifyOtp(data.email, otpCode);
+      if (statusText === "OK") {
+        showSuccessToast("Login successful");
+        setTimeout(() => {
+          navigate("/");
+        }, 500);
+      }
     } catch (error) {
       console.error("Verify OTP error:", error);
       showErrorToast(error.message || "Invalid OTP");
@@ -76,7 +82,6 @@ const Login = () => {
     } catch (error) {
       console.error("Resend OTP error:", error);
       showErrorToast(error.message || "Failed to resend OTP");
-      throw error;
     }
   };
 
@@ -92,7 +97,7 @@ const Login = () => {
         <div className="mt-16 border-2  py-10 px-10 rounded sm:mx-auto  md:w-1/2 sm:w-full ">
           {step === "credentials" ? (
             <>
-              <div className="font-normal text-3xl mb-6">Login</div>
+              <div className="font-normal text-3xl mb-6 flex">Login</div>
               <form className="space-y-6" onSubmit={handleSubmit} method="POST">
                 <div>
                   <label
@@ -137,13 +142,42 @@ const Login = () => {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-4 flex justify-center rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500  focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed w-full"
-                  >
-                    {loading ? "Sending OTP..." : "Login"}
-                  </button>
+                  {/* Login and Google Login Buttons - Centered */}
+                  <div className="flex justify-center gap-3 mt-6 mx-auto">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex justify-center rounded-md bg-blue-700 px-6 py-2 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? "Sending OTP..." : "Login"}
+                    </button>
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        const tokenId = credentialResponse.credential;
+                        try {
+                          const { statusText } =
+                            await verifyGoogleToken(tokenId);
+                          if (statusText === "OK") {
+                            showSuccessToast("Google login successful");
+                            setTimeout(() => {
+                              navigate("/");
+                            }, 500);
+                          }
+                        } catch (error) {
+                          console.error("Google login error:", error);
+                          showErrorToast(
+                            error.message || "Google login failed",
+                          );
+                        }
+                      }}
+                      onError={() => {
+                        console.log("Login Failed");
+                      }}
+                      size="large"
+                      theme="outline"
+                      logo_alignment="center"
+                    />
+                  </div>
                   <div className="mt-4 text-center text-gray-500">
                     Not a registered User?{" "}
                     <Link
@@ -155,30 +189,6 @@ const Login = () => {
                   </div>
                 </div>
               </form>
-              <GoogleLogin
-                onSuccess={async (credentialResponse) => {
-                  const tokenId = credentialResponse.credential;
-                  try {
-                    const { data, statusText } =
-                      await verifyGoogleToken(tokenId);
-                    if (statusText === "OK") {
-                      showSuccessToast("Login successful");
-                      setTimeout(() => {
-                        navigate("/");
-                      }, 500);
-                    } else {
-                      showErrorToast(data.error || "Google login failed");
-                    }
-                  } catch (error) {
-                    console.error("Google login error:", error);
-                    showErrorToast(error.message || "Google login failed");
-                  }
-                }}
-                onError={() => {
-                  console.log("Login Failed");
-                }}
-                useOneTap
-              />
             </>
           ) : (
             <>

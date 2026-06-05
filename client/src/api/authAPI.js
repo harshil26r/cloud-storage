@@ -2,25 +2,46 @@ import axiosInstance from "./axiosInstance";
 
 // Send OTP
 export const sendOtp = async (email) => {
-  const { data, statusText } = await axiosInstance.post("/auth/send-otp", {
-    email,
-  });
-  return { data, statusText };
+  try {
+    const { data, statusText } = await axiosInstance.post("/auth/send-otp", {
+      email,
+    });
+    return { data, statusText, error: null };
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.error || error.message || "Failed to send OTP";
+    throw new Error(errorMessage);
+  }
 };
 
 // Verify OTP
 export const verifyOtp = async (email, otp) => {
-  const { data, statusText } = await axiosInstance.post("/auth/verify-otp", {
-    email,
-    otp,
-  });
-  return { data, statusText };
+  try {
+    const { data, statusText } = await axiosInstance.post("/auth/verify-otp", {
+      email,
+      otp,
+    });
+    return { data, statusText, error: null };
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.error || error.message || "Failed to verify OTP";
+    throw new Error(errorMessage);
+  }
 };
 
-// Verify OTP
+// Verify Google Token
 export const verifyGoogleToken = async (tokenId) => {
-  const { data, statusText } = await axiosInstance.post("/auth/google-login", {
-    tokenId,
-  });
-  return { data, statusText };
+  try {
+    const { data, statusText } = await axiosInstance.post(
+      "/auth/google-login",
+      {
+        tokenId,
+      },
+    );
+    return { data, statusText, error: null };
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.error || error.message || "Google login failed";
+    throw new Error(errorMessage);
+  }
 };
