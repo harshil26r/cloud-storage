@@ -1,8 +1,12 @@
 import { File } from '../models/fileModel.js';
 import { Directory } from '../models/directoryModel.js';
 import { User } from '../models/userModel.js';
-import { rm } from 'fs/promises';
-import { getGoogleFileStream } from '../services/googleDriveService.js';
+import {
+  getGoogleFileStream,
+  deleteGoogleFile,
+  deleteLocalFileIfExists,
+  hasLocalCopy,
+} from '../services/googleDriveService.js';
 
 export const serveFile = async (req, res) => {
   try {
@@ -68,7 +72,7 @@ export const serveFile = async (req, res) => {
     }
 
     res.sendFile(
-      `${process.cwd()}/storage/${_id.toString()}${fileInfo.extension}`,
+      `${process.cwd()}/storage/${_id.toString()}${fileInfo.extension || ''}`,
     );
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -144,7 +148,7 @@ export const deleteFile = async (req, res) => {
       return res.status(400).json({ error: 'File ID is required' });
     }
 
-    const fileInfo = await File.findOne({ _id });
+    const fileInfo = await File.findOne({ _id }).lean();
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
@@ -164,12 +168,25 @@ export const deleteFile = async (req, res) => {
         .json({ error: "You don't have permission to perform this action!" });
     }
 
-    await rm(`./storage/${_id}${fileInfo.extension}`, {
-      force: true,
-    }).catch((err) =>
-      console.error(`Failed to delete physical file ${_id}:`, err),
-    );
+    if (fileInfo.googleId) {
+      const userData = await User.findById(user._id).lean();
+      if (!userData?.googleAccessToken) {
+        return res.status(400).json({ error: 'Google Drive not connected' });
+      }
 
+      const result = await deleteGoogleFile(
+        _id,
+        fileInfo.googleId,
+        userData.googleAccessToken,
+        userData.googleRefreshToken,
+        hasLocalCopy(fileInfo),
+        user._id,
+      );
+
+      return res.status(200).json(result);
+    }
+
+    await deleteLocalFileIfExists(fileInfo);
     await File.deleteOne({ _id });
 
     res.status(200).json({ message: 'File deleted successfully' });

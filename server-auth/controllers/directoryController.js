@@ -1,7 +1,6 @@
-import mongoose from 'mongoose';
-import { rm } from 'fs/promises';
 import { Directory } from '../models/directoryModel.js';
 import { File } from '../models/fileModel.js';
+import { deleteDirectoryTree } from '../services/googleDriveService.js';
 
 export const getDirectory = async (req, res) => {
   try {
@@ -34,7 +33,7 @@ export const getDirectory = async (req, res) => {
 
 export const creatDirectory = async (req, res) => {
   try {
-    const { user, db } = req;
+    const { user } = req;
 
     const parentDirId = req.params.parentDirId;
     const dirName = req.body.dirName?.trim();
@@ -63,7 +62,7 @@ export const creatDirectory = async (req, res) => {
 
     res.status(201).json({
       message: 'Directory created successfully',
-      id: createdDir.insertedId,
+      id: createdDir._id,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -103,73 +102,18 @@ export const renameDirectory = async (req, res) => {
 };
 
 export const deleteDirectory = async (req, res) => {
-  const session = await mongoose.startSession();
   try {
     const { user } = req;
     const _id = req.params.id;
 
-    // First find the target directory itself by _id
-    const targetDir = await Directory.findOne({ _id }).lean();
-
-    if (!targetDir) {
-      return res.status(404).json({ error: 'Directory not found' });
-    }
-
-    async function collectAllChildDirIds(parentId) {
-      const childDirs = await Directory.find({
-        parentDirId: parentId,
-      }).lean();
-
-      let allIds = [parentId];
-
-      for (const dir of childDirs) {
-        const childIds = await collectAllChildDirIds(dir._id);
-        allIds = allIds.concat(childIds);
-      }
-
-      return allIds;
-    }
-
-    // Start recursion from the target dir's _id
-    const allDirIds = await collectAllChildDirIds(targetDir._id);
-
-    // Fetch all files before deleting to get their IDs and extensions
-    const allFiles = await File.find({
-      parentDirId: { $in: allDirIds },
-    }).lean();
-
-    // Delete actual files from storage
-    await Promise.all(
-      allFiles.map((file) => rm(`./storage/${file._id}${file.extension}`)),
-    );
-
-    session.startTransaction();
-
-    // Delete file documents from DB
-    await File.deleteMany(
-      {
-        parentDirId: { $in: allDirIds },
-      },
-      { session },
-    );
-
-    // Delete all directories from DB
-    await Directory.deleteMany(
-      {
-        _id: { $in: allDirIds },
-      },
-      { session },
-    );
-
-    session.commitTransaction();
+    const stats = await deleteDirectoryTree(_id, user._id);
 
     res.status(200).json({
       message: 'Directory deleted successfully',
-      deletedDirsCount: allDirIds.length,
-      deletedFilesCount: allFiles.length,
+      ...stats,
     });
   } catch (err) {
-    session.abortTransaction();
+    console.error('Delete directory error:', err);
     res.status(500).json({ error: err.message });
   }
 };

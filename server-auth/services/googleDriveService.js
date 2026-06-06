@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import fs from 'fs';
 import fsp from 'fs/promises';
 import path from 'path';
+import mongoose from 'mongoose';
 import { createDriveClient, ensureValidToken } from './googleAuth.js';
 import { User } from '../models/userModel.js';
 import { Directory } from '../models/directoryModel.js';
@@ -272,10 +273,7 @@ const handleRemoval = async (change, userId) => {
 
   const file = await File.findOne({ googleId, userId });
   if (file) {
-    if (file.syncState === 'offline' || file.storageMode === 'offline') {
-      const storagePath = getLocalStoragePath(file);
-      await fsp.unlink(storagePath).catch(() => {});
-    }
+    await deleteLocalFileIfExists(file);
     await File.deleteOne({ _id: file._id });
   }
 };
@@ -365,6 +363,7 @@ const upsertDriveItem = async (
         file.id,
         accessToken,
         refreshToken,
+        userId,
       ).catch((err) =>
         console.error(`Auto-download failed for ${file.id}:`, err.message),
       );
@@ -387,6 +386,7 @@ const upsertDriveItem = async (
         file.id,
         accessToken,
         refreshToken,
+        userId,
       ).catch((err) =>
         console.error(`Auto-download failed for ${file.id}:`, err.message),
       );
@@ -399,6 +399,140 @@ const getLocalStoragePath = (fileDoc) => {
     STORAGE_DIR,
     `${fileDoc._id.toString()}${fileDoc.extension || ''}`,
   );
+};
+
+export const hasLocalCopy = (file) => {
+  if (!file?.googleId) return true;
+  return file.syncState === 'offline' || file.storageMode === 'offline';
+};
+
+export const deleteLocalFileIfExists = async (file) => {
+  if (!hasLocalCopy(file)) return;
+  await fsp.unlink(getLocalStoragePath(file)).catch(() => {});
+};
+
+export const deleteGoogleDriveItemById = async (
+  googleId,
+  accessToken,
+  refreshToken,
+  userId,
+) => {
+  if (!googleId || googleId === 'root') return;
+
+  const { accessToken: validToken } = await ensureValidToken(
+    accessToken,
+    refreshToken,
+    userId,
+  );
+  const drive = createDriveClient(validToken, refreshToken);
+
+  try {
+    await drive.files.delete({ fileId: googleId });
+  } catch (err) {
+    const status = err?.code || err?.response?.status;
+    if (status !== 404) throw err;
+  }
+};
+
+const collectAllChildDirIds = async (parentId) => {
+  const childDirs = await Directory.find({ parentDirId: parentId }).lean();
+  let allIds = [parentId];
+
+  for (const dir of childDirs) {
+    const childIds = await collectAllChildDirIds(dir._id);
+    allIds = allIds.concat(childIds);
+  }
+
+  return allIds;
+};
+
+/**
+ * Delete a directory tree including Google Drive items and local copies
+ */
+export const deleteDirectoryTree = async (targetDirId, userId) => {
+  const targetDir = await Directory.findOne({
+    _id: targetDirId,
+    userId,
+  }).lean();
+
+  if (!targetDir) {
+    throw new Error('Directory not found');
+  }
+
+  const allDirIds = await collectAllChildDirIds(targetDir._id);
+  const allFiles = await File.find({
+    parentDirId: { $in: allDirIds },
+  }).lean();
+  const allDirs = await Directory.find({ _id: { $in: allDirIds } }).lean();
+
+  const userData = await User.findById(userId).lean();
+
+  if (userData?.googleAccessToken && targetDir.googleId !== 'root') {
+    const { googleAccessToken, googleRefreshToken } = userData;
+
+    if (targetDir.googleId) {
+      // Real synced folder — one Drive delete trashes all children on Drive
+      await deleteGoogleDriveItemById(
+        targetDir.googleId,
+        googleAccessToken,
+        googleRefreshToken,
+        userId,
+      );
+    } else {
+      // Local folder that may contain synced items
+      for (const file of allFiles) {
+        if (file.googleId) {
+          await deleteGoogleDriveItemById(
+            file.googleId,
+            googleAccessToken,
+            googleRefreshToken,
+            userId,
+          );
+        }
+      }
+
+      for (const dir of allDirs) {
+        if (dir.googleId && dir.googleId !== 'root') {
+          await deleteGoogleDriveItemById(
+            dir.googleId,
+            googleAccessToken,
+            googleRefreshToken,
+            userId,
+          );
+        }
+      }
+    }
+  }
+
+  for (const file of allFiles) {
+    await deleteLocalFileIfExists(file);
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    await File.deleteMany({ parentDirId: { $in: allDirIds } }, { session });
+    await Directory.deleteMany({ _id: { $in: allDirIds } }, { session });
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+
+  if (
+    userData?.googleDriveRootDirId?.toString() === targetDir._id.toString()
+  ) {
+    await User.findByIdAndUpdate(userId, {
+      $unset: { googleDriveRootDirId: '' },
+    });
+  }
+
+  return {
+    deletedDirsCount: allDirIds.length,
+    deletedFilesCount: allFiles.length,
+  };
 };
 
 /**
@@ -544,12 +678,9 @@ export const deleteGoogleFile = async (
 
   await drive.files.delete({ fileId: googleId });
 
-  if (deleteLocal) {
-    const fileDoc = await File.findById(fileId);
-    if (fileDoc) {
-      const storagePath = getLocalStoragePath(fileDoc);
-      await fsp.unlink(storagePath).catch(() => {});
-    }
+  const fileDoc = await File.findById(fileId);
+  if (fileDoc && (deleteLocal || hasLocalCopy(fileDoc))) {
+    await deleteLocalFileIfExists(fileDoc);
   }
 
   await File.deleteOne({ _id: fileId });

@@ -76,7 +76,7 @@ export default function GoogleDriveConnect({ onConnected }) {
 
   return (
     <>
-      <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-8 text-center">
+      <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-200 from-slate-50 to-white px-6 py-8 text-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
           <GoogleDriveLogo className="w-10 h-10" />
         </div>
@@ -109,7 +109,7 @@ export default function GoogleDriveConnect({ onConnected }) {
       </div>
 
       {showNameDialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
             onClick={() => !loading && setShowNameDialog(false)}

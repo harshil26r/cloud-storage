@@ -64,7 +64,25 @@ function DirectoryView() {
         } else {
           showErrorToast(data.error || data.message);
         }
+      } else if (!isFile && item?.googleId) {
+        const isVirtualRoot = item.googleId === "root";
+        const confirmMsg = isVirtualRoot
+          ? "Remove the Google Drive folder from this app? Your files will stay in Google Drive."
+          : "Delete this folder and all its contents from Google Drive?";
+        if (!window.confirm(confirmMsg)) return;
+
+        const { data, statusText } = await deleteDirectory(_id);
+        if (statusText === "OK") {
+          showSuccessToast(data.message);
+        } else {
+          showErrorToast(data.message || data.error);
+        }
       } else {
+        const confirmMsg = isFile
+          ? "Delete this file?"
+          : "Delete this folder and everything inside it?";
+        if (!window.confirm(confirmMsg)) return;
+
         const { data, statusText } = isFile
           ? await deleteFile(_id)
           : await deleteDirectory(_id);
@@ -250,7 +268,7 @@ function DirectoryView() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {isGoogleDriveFolder && (
-          <div className="mb-5 flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-50 via-white to-amber-50 px-4 py-3 ring-1 ring-blue-100">
+          <div className="mb-5 flex items-center gap-3 rounded-xl from-blue-50 via-white to-amber-50 px-4 py-3 ring-1 ring-blue-100">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
               <GoogleDriveLogo className="h-5 w-5" />
             </div>
