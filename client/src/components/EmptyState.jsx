@@ -1,22 +1,26 @@
 export default function EmptyState() {
   return (
-    <div className="text-center py-12">
-      <svg
-        className="mx-auto h-12 w-12 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-        />
-      </svg>
-      <h3 className="mt-2 text-sm font-medium text-gray-900">No files</h3>
-      <p className="mt-1 text-sm text-gray-500">
-        Get started by uploading a file or creating a folder.
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+        <svg
+          className="h-10 w-10 text-gray-400 dark:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+          />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        No files yet
+      </h3>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Upload your first file to get started
       </p>
     </div>
   );

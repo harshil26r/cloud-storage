@@ -9,7 +9,7 @@ import { verifyGoogleToken } from "../../api/authAPI";
 const Login = () => {
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("credentials"); // "credentials" or "otp"
+  const [step, setStep] = useState("credentials");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     email: "pipaliyaharshil26@gmail.com",
@@ -40,7 +40,6 @@ const Login = () => {
       );
 
       if (statusText === "OK") {
-        // Send OTP for second factor verification
         try {
           await sendOtp(data.email);
           showSuccessToast("OTP sent to your email");
@@ -87,22 +86,24 @@ const Login = () => {
 
   return (
     <>
-      <div className="flex min-h-screen justify-center items-center flex-col w-full px-3  mb-5 lg:px-8">
+      <div className="flex min-h-screen justify-center items-center flex-col w-full px-3 mb-5 lg:px-8 bg-white dark:bg-gray-950">
         <div className="sm:mx-auto sm:max-w-sm flex">
-          <h2 className="mt-2 text-center text-3xl font-semibold leading-9 tracking-tight text-gray-800">
+          <h2 className="mt-2 text-center text-3xl font-semibold leading-9 tracking-tight text-gray-800 dark:text-gray-100">
             Cloud Storage
           </h2>
         </div>
 
-        <div className="mt-16 border-2  py-10 px-10 rounded sm:mx-auto  md:w-1/2 sm:w-full ">
+        <div className="mt-16 border-2 py-10 px-10 rounded sm:mx-auto md:w-1/2 sm:w-full dark:border-gray-700">
           {step === "credentials" ? (
             <>
-              <div className="font-normal text-3xl mb-6 flex">Login</div>
+              <div className="font-normal text-3xl mb-6 flex dark:text-gray-100">
+                Login
+              </div>
               <form className="space-y-6" onSubmit={handleSubmit} method="POST">
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium leading-6 text-gray-900"
+                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Email address <span className="text-red-500">*</span>
                   </label>
@@ -115,7 +116,7 @@ const Login = () => {
                       type="email"
                       autoComplete="email"
                       required
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                 </div>
@@ -124,7 +125,7 @@ const Login = () => {
                   <div className="flex items-center justify-between">
                     <label
                       htmlFor="password"
-                      className="block text-sm font-medium leading-6 text-gray-900"
+                      className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                     >
                       Password <span className="text-red-500">*</span>
                     </label>
@@ -138,11 +139,10 @@ const Login = () => {
                       type="password"
                       autoComplete="current-password"
                       required
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
 
-                  {/* Login and Google Login Buttons - Centered */}
                   <div className="flex justify-center gap-3 mt-6 mx-auto">
                     <button
                       type="submit"
@@ -178,11 +178,11 @@ const Login = () => {
                       logo_alignment="center"
                     />
                   </div>
-                  <div className="mt-4 text-center text-gray-500">
+                  <div className="mt-4 text-center text-gray-500 dark:text-gray-400">
                     Not a registered User?{" "}
                     <Link
                       to="/signup"
-                      className=" underline text-blue-600 hover:text-blue-500"
+                      className="underline text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       Sign Up
                     </Link>

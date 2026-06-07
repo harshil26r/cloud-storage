@@ -62,16 +62,15 @@ export default function GoogleDriveSettings({
 
   return (
     <div className="space-y-5">
-      {/* Connection badge */}
-      <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200">
+      <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:ring-emerald-800">
         <div className="flex items-center gap-2.5">
           <span className="relative flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
           </span>
           <div>
-            <p className="text-sm font-medium text-emerald-900">Connected</p>
-            <p className="text-[11px] text-emerald-700">
+            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">Connected</p>
+            <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
               Google Drive is linked
             </p>
           </div>
@@ -79,22 +78,21 @@ export default function GoogleDriveSettings({
         <button
           onClick={handleDisconnect}
           disabled={disconnecting}
-          className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 ring-1 ring-red-200 transition-colors hover:bg-red-50 disabled:opacity-50"
+          className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 ring-1 ring-red-200 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:ring-red-800 dark:hover:bg-red-900/30"
         >
-          {disconnecting ? "…" : "Disconnect"}
+          {disconnecting ? "\u2026" : "Disconnect"}
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+      <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-gray-800">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
               activeTab === tab.id
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-white text-slate-900 shadow-sm dark:bg-gray-700 dark:text-gray-100"
+                : "text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200"
             }`}
           >
             {tab.label}

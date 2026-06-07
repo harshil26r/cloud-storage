@@ -2,9 +2,10 @@ import axiosInstance from "./axiosInstance";
 
 // Directory API endpoints
 // Get all directories or root directory
-export const getDirectories = async (directoryId = null) => {
+export const getDirectories = async (directoryId = null, options = {}) => {
   const { data, statusText } = await axiosInstance.get(
     `/directory/${directoryId || ""}`,
+    { signal: options.signal },
   );
   return { data, statusText };
 };

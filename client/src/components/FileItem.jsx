@@ -1,18 +1,19 @@
+import { useState } from "react";
 import ActionMenu from "./action/ActionMenu";
+import FileThumbnail from "./FileThumbnail";
 import FileStatusIndicator from "./GoogleDrive/FileStatusIndicator";
-import { FileDriveIcon } from "./GoogleDrive/icons";
 
 export default function FileItem({
   item,
   viewMode,
   onOpen,
-  onDownload,
   onRename,
   onDelete,
   onMakeOffline,
   onOpenInDrive,
   onStatusChange,
 }) {
+  const [showActions, setShowActions] = useState(false);
   const modifiedDate = item?.modifiedAt || item?.modified;
   const isGoogleFile = !!item?.googleId;
 
@@ -23,90 +24,49 @@ export default function FileItem({
         downloadProgress: item.downloadProgress,
       }
     : null;
-
-  return viewMode === "grid" ? (
-    <div
-      className={`group relative flex flex-col rounded-xl border bg-white p-4 transition-all hover:shadow-md ${
-        isGoogleFile
-          ? "border-blue-100 hover:border-blue-200"
-          : "border-slate-200 hover:border-slate-300"
-      }`}
-    >
-      {isGoogleFile && (
-        <div className="absolute right-3 top-3">
-          <FileStatusIndicator
-            fileId={item._id}
-            googleId={item.googleId}
-            initialState={initialState}
-            compact
-            onStatusChange={onStatusChange}
-          />
+  if (viewMode === "grid") {
+    return (
+      <div
+        onClick={onOpen}
+        className="group relative flex flex-col rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md hover:border-gray-300 cursor-pointer dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600 dark:hover:shadow-gray-900/50"
+      >
+        <div className="flex items-center justify-center aspect-[4/3] bg-gray-50 rounded-t-lg overflow-hidden dark:bg-gray-800">
+          <FileThumbnail item={item} size="lg" />
         </div>
-      )}
-
-      <div className="mb-3 flex items-start justify-between">
-        {isGoogleFile ? (
-          <FileDriveIcon className="h-10 w-10 shrink-0" />
-        ) : (
-          <svg
-            className="h-10 w-10 shrink-0 text-blue-500"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-              clipRule="evenodd"
+        <div className="px-3 py-2.5 flex items-center justify-between gap-1">
+          <p className="text-sm text-gray-800 truncate flex-1 min-w-0 dark:text-gray-200">
+            {item?.name}
+          </p>
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            <ActionMenu
+              isOpen={showActions}
+              onToggle={() => setShowActions(!showActions)}
+              onClose={() => setShowActions(false)}
+              onRename={onRename}
+              onDelete={onDelete}
+              item={item}
+              onMakeOffline={onMakeOffline}
+              onOpenInDrive={onOpenInDrive}
+              onStatusChange={onStatusChange}
             />
-          </svg>
-        )}
-        <ActionMenu
-          item={item}
-          isFile={true}
-          onOpen={onOpen}
-          onDownload={onDownload}
-          onRename={onRename}
-          onDelete={onDelete}
-          onMakeOffline={onMakeOffline}
-          onOpenInDrive={onOpenInDrive}
-        />
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      <p className="mb-1 flex-1 truncate text-sm font-medium text-slate-900">
-        {item?.name}
-      </p>
-
-      {!isGoogleFile && <p className="text-xs text-slate-400">Local file</p>}
-
-      <p className="mt-1 text-xs text-slate-400">
-        {modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "—"}
-      </p>
-    </div>
-  ) : (
+  return (
     <tr
-      className={`border-b transition-colors ${
-        isGoogleFile ? "hover:bg-blue-50/40" : "hover:bg-slate-50"
-      }`}
+      onClick={onOpen}
+      className={`group border-b border-gray-100 transition-colors cursor-pointer ${
+        showActions ? "bg-gray-50" : "hover:bg-gray-50"
+      } dark:border-gray-800 dark:hover:bg-gray-800/50`}
     >
-      <td className="px-6 py-3.5">
+      <td className="px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-3">
-          {isGoogleFile ? (
-            <FileDriveIcon className="h-5 w-5 shrink-0" />
-          ) : (
-            <svg
-              className="h-5 w-5 shrink-0 text-blue-500"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                clipRule="evenodd"
-              />
-            </svg>
-          )}
-          <div className="min-w-0">
-            <span className="block truncate text-sm font-medium text-slate-900">
+          <FileThumbnail item={item} size="sm" />
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100">
               {item?.name}
             </span>
             {isGoogleFile && (
@@ -120,29 +80,35 @@ export default function FileItem({
           </div>
         </div>
       </td>
-      <td className="px-6 py-3.5 text-sm text-slate-500">
-        {modifiedDate ? new Date(modifiedDate).toLocaleDateString() : "—"}
+      <td className="px-4 py-2.5 text-sm text-gray-500 whitespace-nowrap sm:table-cell dark:text-gray-400">
+        {item?.size ? `${(item.size / 1024 / 1024).toFixed(2)} MB` : "—"}
       </td>
-      <td className="px-6 py-3.5">
-        {isGoogleFile ? (
-          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200 ring-inset">
-            Drive
-          </span>
-        ) : (
-          <span className="text-sm text-slate-500">Local</span>
-        )}
+      <td className="px-4 py-2.5 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
+        {item?.updatedAt
+          ? new Date(item.updatedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "—"}
       </td>
-      <td className="px-6 py-3.5 text-center">
-        <ActionMenu
-          item={item}
-          isFile={true}
-          onOpen={onOpen}
-          onDownload={onDownload}
-          onRename={onRename}
-          onDelete={onDelete}
-          onMakeOffline={onMakeOffline}
-          onOpenInDrive={onOpenInDrive}
-        />
+      <td className="px-4 py-2.5 text-right">
+        <div
+          className={`transition-opacity ${showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ActionMenu
+            isOpen={showActions}
+            onToggle={() => setShowActions(!showActions)}
+            onClose={() => setShowActions(false)}
+            onRename={onRename}
+            onDelete={onDelete}
+            item={item}
+            onMakeOffline={onMakeOffline}
+            onOpenInDrive={onOpenInDrive}
+            onStatusChange={onStatusChange}
+          />
+        </div>
       </td>
     </tr>
   );

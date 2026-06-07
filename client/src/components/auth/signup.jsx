@@ -9,7 +9,7 @@ import { verifyGoogleToken } from "../../api/authAPI";
 const SignUp = () => {
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("form"); // "form" or "otp"
+  const [step, setStep] = useState("form");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [data, setData] = useState({
@@ -28,7 +28,6 @@ const SignUp = () => {
       [name]: value,
     });
 
-    // Clear error when user starts typing again
     setErrors({ ...errors, [name]: "" });
   };
 
@@ -38,7 +37,6 @@ const SignUp = () => {
 
     const newErrors = {};
 
-    // Username validation
     if (!data.username.trim()) {
       newErrors.username = "Name is required";
       isValid = false;
@@ -47,7 +45,6 @@ const SignUp = () => {
       isValid = false;
     }
 
-    // Email validation
     if (!data.email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -60,7 +57,6 @@ const SignUp = () => {
       isValid = false;
     }
 
-    // Password validation
     if (!data.password.trim()) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -68,7 +64,6 @@ const SignUp = () => {
       newErrors.password = "Passsword is minimum 8 charecter";
       isValid = false;
     }
-    // Password validation
     if (!data.cPassword.trim()) {
       newErrors.cPassword = "Confirm Password is required";
       isValid = false;
@@ -108,9 +103,7 @@ const SignUp = () => {
   const handleVerifyOtp = async (otpCode) => {
     try {
       await verifyOtp(data.email, otpCode);
-      // Don't show OTP success toast yet, wait for signup to complete
       await handleCompleteSignup();
-      // If signup succeeds, handleCompleteSignup will show success toast
     } catch (error) {
       console.error("OTP/Signup error:", error);
       showErrorToast(error.message);
@@ -145,17 +138,17 @@ const SignUp = () => {
   };
   return (
     <>
-      <div className="flex min-h-screen justify-center items-center flex-col w-full px-3  mb-5 lg:px-8">
+      <div className="flex min-h-screen justify-center items-center flex-col w-full px-3 mb-5 lg:px-8 bg-white dark:bg-gray-950">
         <div className="sm:mx-auto sm:max-w-sm flex">
-          <h2 className="mt-2 text-center text-3xl font-semibold leading-9 tracking-tight text-gray-800">
+          <h2 className="mt-2 text-center text-3xl font-semibold leading-9 tracking-tight text-gray-800 dark:text-gray-100">
             Cloud Storage
           </h2>
         </div>
 
-        <div className="mt-16 border-2  py-10 px-10 rounded sm:mx-auto  md:w-1/2 sm:w-full ">
+        <div className="mt-16 border-2 py-10 px-10 rounded sm:mx-auto md:w-1/2 sm:w-full dark:border-gray-700">
           {step === "form" ? (
             <>
-              <div className="font-normal text-3xl mb-6">Register</div>
+              <div className="font-normal text-3xl mb-6 dark:text-gray-100">Register</div>
               <form
                 className="space-y-6"
                 onSubmit={handleSendOtp}
@@ -164,7 +157,7 @@ const SignUp = () => {
                 <div>
                   <label
                     htmlFor="username"
-                    className="block text-sm font-medium leading-6 text-gray-900"
+                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     User name <span className="text-red-500">*</span>
                   </label>
@@ -177,7 +170,7 @@ const SignUp = () => {
                       name="username"
                       type="text"
                       autoComplete="username"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.username && (
@@ -187,7 +180,7 @@ const SignUp = () => {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium leading-6 text-gray-900"
+                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Email address <span className="text-red-500">*</span>
                   </label>
@@ -199,7 +192,7 @@ const SignUp = () => {
                       name="email"
                       type="text"
                       autoComplete="email"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.email && (
@@ -209,7 +202,7 @@ const SignUp = () => {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium leading-6 text-gray-900"
+                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Password <span className="text-red-500">*</span>
                   </label>
@@ -221,7 +214,7 @@ const SignUp = () => {
                       name="password"
                       type="password"
                       autoComplete="password"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.password && (
@@ -231,7 +224,7 @@ const SignUp = () => {
                 <div>
                   <label
                     htmlFor="cpassword"
-                    className="block text-sm font-medium leading-6 text-gray-900"
+                    className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
                   >
                     Confirm Password <span className="text-red-500">*</span>
                   </label>
@@ -243,7 +236,7 @@ const SignUp = () => {
                       name="cPassword"
                       type="password"
                       autoComplete="password"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.cPassword && (
@@ -260,26 +253,25 @@ const SignUp = () => {
                     onChange={(e) =>
                       setData({ ...data, isSubscribe: e.target.checked })
                     }
-                    className=" w-4 rounded border-gray-100  text-indigo-600 focus:ring-indigo-600"
+                    className="w-4 rounded border-gray-100 text-indigo-600 focus:ring-indigo-600 dark:border-gray-600"
                   />
-                  <p className="ms-2 text-gray-500">
+                  <p className="ms-2 text-gray-500 dark:text-gray-400">
                     Subscribe to our newsletter
                   </p>
                 </div>
 
-                <div className="mt-2 text-gray-500">
+                <div className="mt-2 text-gray-500 dark:text-gray-400">
                   Your personal data will be used to support your experience
                   throughout this website, to manage access to your account, and
                   for other purposes described in our{" "}
                   <Link
                     to="/privacy"
-                    className=" underline text-blue-600 hover:text-blue-500"
+                    className="underline text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     privacy policy.
                   </Link>
                 </div>
 
-                {/* Register and Google Login Buttons - Centered */}
                 <div className="flex justify-center gap-3 mt-6 mx-auto">
                   <button
                     type="submit"
@@ -313,11 +305,11 @@ const SignUp = () => {
                   />
                 </div>
 
-                <div className="mt-4 text-center text-gray-500">
+                <div className="mt-4 text-center text-gray-500 dark:text-gray-400">
                   Already have an account?{" "}
                   <Link
                     to="/login"
-                    className=" underline text-blue-600 hover:text-blue-500"
+                    className="underline text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     Sign In
                   </Link>

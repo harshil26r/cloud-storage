@@ -7,19 +7,19 @@ const STATUS_CONFIG = {
   online_only: {
     label: "Online only",
     icon: CloudIcon,
-    className: "bg-sky-50 text-sky-700 ring-sky-200",
+    className: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:ring-sky-800",
     dot: "bg-sky-500",
   },
   downloading: {
     label: "Downloading",
     icon: SyncIcon,
-    className: "bg-amber-50 text-amber-700 ring-amber-200",
+    className: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-800",
     dot: "bg-amber-500",
   },
   offline: {
     label: "Available offline",
     icon: DeviceIcon,
-    className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    className: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:ring-emerald-800",
     dot: "bg-emerald-500",
   },
 };
@@ -131,15 +131,15 @@ export default function FileStatusIndicator({
         <button
           onClick={handleMakeOffline}
           disabled={downloading}
-          className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-100"
         >
           <DeviceIcon className="w-3 h-3" />
-          {downloading ? "Starting…" : "Save offline"}
+          {downloading ? "Starting\u2026" : "Save offline"}
         </button>
       )}
 
       {isDownloading && (
-        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200 dark:bg-gray-700">
           <div
             className="h-full rounded-full bg-amber-500 transition-all duration-300"
             style={{ width: `${fileState.downloadProgress}%` }}

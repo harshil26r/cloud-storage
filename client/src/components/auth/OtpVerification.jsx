@@ -34,15 +34,15 @@ const OtpVerification = ({ email, onVerify, onBack, onResend }) => {
 
   return (
     <>
-      <div className="font-normal text-3xl mb-6">Verify Email</div>
-      <p className="text-gray-600 mb-6">
+      <div className="font-normal text-3xl mb-6 dark:text-gray-100">Verify Email</div>
+      <p className="text-gray-600 mb-6 dark:text-gray-400">
         We have sent an OTP to <strong>{email}</strong>. Please enter it below.
       </p>
       <form className="space-y-6" onSubmit={handleVerifyOtp} method="POST">
         <div>
           <label
             htmlFor="otp"
-            className="block text-sm font-medium leading-6 text-gray-900"
+            className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100"
           >
             OTP Code <span className="text-red-500">*</span>
           </label>
@@ -55,7 +55,7 @@ const OtpVerification = ({ email, onVerify, onBack, onResend }) => {
               type="text"
               placeholder="Enter 6-digit OTP"
               maxLength="6"
-              className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 text-center text-2xl tracking-widest"
+              className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 text-center text-2xl tracking-widest dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
             />
           </div>
         </div>
@@ -71,18 +71,18 @@ const OtpVerification = ({ email, onVerify, onBack, onResend }) => {
         <button
           type="button"
           onClick={onBack}
-          className="flex justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-gray-900 shadow-sm hover:bg-gray-400 w-full"
+          className="flex justify-center rounded-md bg-gray-300 px-3 py-1.5 text-sm font-semibold leading-6 text-gray-900 shadow-sm hover:bg-gray-400 w-full dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500"
         >
           Back
         </button>
 
-        <div className="mt-4 text-center text-gray-500 text-sm">
+        <div className="mt-4 text-center text-gray-500 text-sm dark:text-gray-400">
           <p>Didn't receive the OTP?</p>
           <button
             type="button"
             onClick={handleResendOtp}
             disabled={loading}
-            className="text-blue-600 hover:text-blue-500 underline font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-blue-600 hover:text-blue-500 underline font-semibold disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:hover:text-blue-300"
           >
             Resend OTP
           </button>

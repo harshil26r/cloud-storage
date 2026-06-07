@@ -34,7 +34,7 @@ export default function ActionMenu({
     <div className="relative inline-block">
       <button
         onClick={toggleMenu}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
         title="More options"
       >
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -49,12 +49,12 @@ export default function ActionMenu({
             onClick={() => setIsOpen(false)}
           />
           <div
-            className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+            className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => handleAction(onOpen)}
-              className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+              className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
             >
               <svg
                 className="h-4 w-4 text-blue-500"
@@ -75,7 +75,7 @@ export default function ActionMenu({
             {isFile && (
               <button
                 onClick={() => handleAction(onDownload)}
-                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
               >
                 <svg
                   className="h-4 w-4 text-emerald-500"
@@ -97,7 +97,7 @@ export default function ActionMenu({
             {isOnlineOnly && onMakeOffline && (
               <button
                 onClick={() => handleAction(onMakeOffline)}
-                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
               >
                 <svg
                   className="h-4 w-4 text-indigo-500"
@@ -119,7 +119,7 @@ export default function ActionMenu({
             {isGoogleFile && item?.webViewLink && onOpenInDrive && (
               <button
                 onClick={() => handleAction(onOpenInDrive)}
-                className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
               >
                 <svg
                   className="h-4 w-4 text-[#1a73e8]"
@@ -140,7 +140,7 @@ export default function ActionMenu({
 
             <button
               onClick={() => handleAction(onRename)}
-              className={`${menuItemClass} text-slate-700 hover:bg-slate-50`}
+              className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
             >
               <svg
                 className="h-4 w-4 text-slate-400"
@@ -158,11 +158,11 @@ export default function ActionMenu({
               Rename
             </button>
 
-            <div className="my-1 border-t border-slate-100" />
+            <div className="my-1 border-t border-slate-100 dark:border-gray-700" />
 
             <button
               onClick={() => handleAction(onDelete)}
-              className={`${menuItemClass} text-red-600 hover:bg-red-50`}
+              className={`${menuItemClass} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30`}
             >
               <svg
                 className="h-4 w-4"

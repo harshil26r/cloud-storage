@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { useUI } from "./contexts/UIContext";
 import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
 import BreadcrumbNav from "./components/BreadcrumbNav";
 import FileItem from "./components/FileItem";
 import FolderItem from "./components/FolderItem";
 import EmptyState from "./components/EmptyState";
+import FileThumbnail from "./components/FileThumbnail";
 import RenameDialog from "./components/action/RenameDialog";
 import CreateFolderDialog from "./components/action/CreateFolderDialog";
 import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
@@ -32,15 +35,15 @@ function DirectoryView() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [renamingItem, setRenamingItem] = useState(null);
-  const [viewMode, setViewMode] = useState("list");
+  const { viewMode } = useUI();
   const navigate = useNavigate();
 
-  let { directoryId } = useParams();
+  const { directoryId } = useParams();
 
   const isGoogleDriveFolder = !!currentDir?.googleId;
 
-  const getAllFiles = useCallback(async () => {
-    const { data, statusText } = await getDirectories(directoryId);
+  const getAllFiles = useCallback(async (signal) => {
+    const { data, statusText } = await getDirectories(directoryId, { signal });
     if (statusText === "OK") {
       setFileList(data?.files);
       setDirectoryList(data?.directories);
@@ -243,7 +246,7 @@ function DirectoryView() {
     }
   };
 
-  const fileItemProps = (item) => ({
+  const fileItemProps = useMemo(() => (item) => ({
     item,
     onOpen: () => handleOpenFile(item),
     onDownload: () => handleDownloadFile(item),
@@ -252,145 +255,161 @@ function DirectoryView() {
     onMakeOffline: () => handleMakeOffline(item),
     onOpenInDrive: () => handleOpenInDrive(item),
     onStatusChange: getAllFiles,
-  });
+  }), [handleOpenFile, handleDownloadFile, handleRename, handleDelete, handleMakeOffline, handleOpenInDrive, getAllFiles]);
 
   useEffect(() => {
-    getAllFiles();
+    const controller = new AbortController();
+    getAllFiles(controller.signal);
+    return () => controller.abort();
   }, [getAllFiles]);
 
+  const hasItems = fileList?.length > 0 || directoryList?.length > 0;
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header
-        viewMode={viewMode}
-        onViewChange={setViewMode}
-        onSyncComplete={getAllFiles}
-      />
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      <Header onSyncComplete={getAllFiles} />
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {isGoogleDriveFolder && (
-          <div className="mb-5 flex items-center gap-3 rounded-xl from-blue-50 via-white to-amber-50 px-4 py-3 ring-1 ring-blue-100">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
-              <GoogleDriveLogo className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900">
-                Browsing Google Drive
-              </p>
-              <p className="text-xs text-slate-500">
-                Files here sync with your connected Google account
-              </p>
-            </div>
-          </div>
-        )}
+      <div className="flex">
+        <Sidebar currentDir={currentDir} />
 
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <BreadcrumbNav
-            currentDir={currentDir}
-            onBack={() => navigate(`/directory/${currentDir.parentDirId}`)}
-          />
+        <main className="flex-1 min-w-0">
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
+            {isGoogleDriveFolder && (
+              <div className="mb-4 flex items-center gap-2.5 rounded-lg bg-blue-50/60 px-3.5 py-2.5 dark:bg-blue-900/30">
+                <GoogleDriveLogo className="h-4 w-4 shrink-0" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Browsing Google Drive &mdash; files sync with your connected
+                  account
+                </p>
+              </div>
+            )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setShowCreateFolder(true)}
-              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New folder
-            </button>
-            <label
-              className={`inline-flex cursor-pointer items-center rounded-lg px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all hover:shadow ${
-                isGoogleDriveFolder
-                  ? "bg-[#1a73e8] hover:bg-[#1557b0]"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              {isGoogleDriveFolder ? "Upload to Drive" : "Upload"}
-              <input
-                type="file"
-                onChange={uploadFileInCurrentDir}
-                className="hidden"
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <BreadcrumbNav
+                currentDir={currentDir}
+                onBack={() => navigate(`/directory/${currentDir.parentDirId}`)}
               />
-            </label>
-          </div>
-        </div>
 
-        <CreateFolderDialog
-          isOpen={showCreateFolder}
-          name={newFolderName}
-          onNameChange={setNewFolderName}
-          onCreate={createFolder}
-          onCancel={() => {
-            setShowCreateFolder(false);
-            setNewFolderName("");
-          }}
-        />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowCreateFolder(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  New folder
+                </button>
+                <label className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 cursor-pointer transition-colors">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  Upload
+                  <input
+                    type="file"
+                    onChange={uploadFileInCurrentDir}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
 
-        <RenameDialog
-          isOpen={!!renamingItem}
-          itemName={renamingItem?.isFile ? newFileName : renamingItem?._id}
-          name={newFileName}
-          onNameChange={setNewFileName}
-          onSave={handleSaveFileName}
-          onCancel={() => {
-            setNewFileName("");
-            setRenamingItem(null);
-          }}
-        />
+            <CreateFolderDialog
+              isOpen={showCreateFolder}
+              name={newFolderName}
+              onNameChange={setNewFolderName}
+              onCreate={createFolder}
+              onCancel={() => {
+                setShowCreateFolder(false);
+                setNewFolderName("");
+              }}
+            />
 
-        {fileList?.length === 0 && directoryList?.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            {viewMode === "list" && (
-              <div className="hidden min-h-lvh overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
-                <table className="w-full">
-                  <thead className="border-b border-slate-100 bg-slate-50/80">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                        Modified
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {directoryList?.map((item, index) => (
+            <RenameDialog
+              isOpen={!!renamingItem}
+              itemName={renamingItem?.isFile ? newFileName : renamingItem?._id}
+              name={newFileName}
+              onNameChange={setNewFileName}
+              onSave={handleSaveFileName}
+              onCancel={() => {
+                setNewFileName("");
+                setRenamingItem(null);
+              }}
+            />
+
+            {!hasItems ? (
+              <EmptyState />
+            ) : (
+              <>
+                {viewMode === "list" && (
+                  <div className="hidden overflow-x-auto md:block rounded-lg border border-gray-200 dark:border-gray-700">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">
+                          <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Name
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:table-cell dark:text-gray-400">
+                            Size
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            Modified
+                          </th>
+                          <th className="px-4 py-3 w-10" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {directoryList?.map((item) => (
+                          <FolderItem
+                            key={`dir-${item._id}`}
+                            item={item}
+                            viewMode="list"
+                            onOpen={() => navigate(getUrl(item?._id, false))}
+                            onRename={() =>
+                              handleRename(item?.name, item?._id, false)
+                            }
+                            onDelete={() => handleDelete(item?._id, false)}
+                          />
+                        ))}
+                        {fileList?.map((item) => (
+                          <FileItem
+                            key={`file-${item._id}`}
+                            viewMode="list"
+                            {...fileItemProps(item)}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {viewMode === "grid" && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                    {directoryList?.map((item) => (
                       <FolderItem
-                        key={`dir-${index}`}
+                        key={`dir-grid-${item._id}`}
                         item={item}
-                        viewMode="list"
+                        viewMode="grid"
                         onOpen={() => navigate(getUrl(item?._id, false))}
                         onRename={() =>
                           handleRename(item?.name, item?._id, false)
@@ -398,156 +417,67 @@ function DirectoryView() {
                         onDelete={() => handleDelete(item?._id, false)}
                       />
                     ))}
-                    {fileList?.map((item, index) => (
+                    {fileList?.map((item) => (
                       <FileItem
-                        key={`file-${index}`}
-                        viewMode="list"
+                        key={`file-grid-${item._id}`}
+                        viewMode="grid"
                         {...fileItemProps(item)}
                       />
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </div>
+                )}
 
-            {viewMode === "grid" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {directoryList?.map((item, index) => (
-                  <FolderItem
-                    key={`dir-grid-${index}`}
-                    item={item}
-                    viewMode="grid"
-                    onOpen={() => navigate(getUrl(item?._id, false))}
-                    onRename={() => handleRename(item?.name, item?._id, false)}
-                    onDelete={() => handleDelete(item?._id, false)}
-                  />
-                ))}
-                {fileList?.map((item, index) => (
-                  <FileItem
-                    key={`file-grid-${index}`}
-                    viewMode="grid"
-                    {...fileItemProps(item)}
-                  />
-                ))}
-              </div>
-            )}
-
-            <div className="md:hidden space-y-3">
-              {directoryList?.map((item, index) => (
-                <div
-                  key={`dir-mobile-${index}`}
-                  className="bg-white border border-gray-200 rounded-lg p-4"
-                  onDoubleClick={() => navigate(getUrl(item?._id, false))}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <svg
-                        className="w-6 h-6 text-yellow-500 shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                      </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {item?.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {item?.googleId ? "Google Drive Folder" : "Folder"}
-                        </p>
+                <div className="md:hidden space-y-2">
+                  {directoryList?.map((item) => (
+                    <div
+                      key={`dir-mobile-${item._id}`}
+                      className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
+                      onDoubleClick={() => navigate(getUrl(item?._id, false))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className="w-6 h-6 shrink-0 text-amber-400"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                            {item?.name}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {item?.googleId ? "Drive folder" : "Folder"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => navigate(getUrl(item?._id, false))}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+                  ))}
+                  {fileList?.map((item) => (
+                    <div
+                      key={`file-mobile-${item._id}`}
+                      className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
+                      onDoubleClick={() => handleOpenFile(item)}
                     >
-                      Open
-                    </button>
-                    <button
-                      onClick={() => handleRename(item?.name, item?._id, false)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item?._id, false)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {fileList?.map((item, index) => (
-                <div
-                  key={`file-mobile-${index}`}
-                  className="bg-white border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <svg
-                        className="w-6 h-6 text-blue-500 shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {item?.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {item?.googleId ? "Google Drive" : "File"}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <FileThumbnail item={item} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                            {item?.name}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {item?.googleId ? "Drive" : "File"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleOpenFile(item)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors text-center"
-                    >
-                      Open
-                    </button>
-                    <button
-                      onClick={() => handleDownloadFile(item)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors text-center"
-                    >
-                      Download
-                    </button>
-                    {item?.googleId && item?.syncState === "online_only" && (
-                      <button
-                        onClick={() => handleMakeOffline(item)}
-                        className="flex-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors text-center"
-                      >
-                        Offline
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleRename(item?.name, item?._id, true)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item?._id, true, item)}
-                      className="flex-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-      </main>
+              </>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

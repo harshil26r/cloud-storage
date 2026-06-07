@@ -1,77 +1,57 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { useUI } from "../contexts/UIContext";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
-import { getProfile, logout, logoutAll } from "../api";
 import { GoogleDriveSettings, GoogleDrivePanel } from "./GoogleDrive";
 import { GoogleDriveLogo } from "./GoogleDrive/icons";
 
-export default function Header({
-  viewMode,
-  onViewChange,
-  onGoogleDriveStatusChange,
-  onSyncComplete,
-}) {
-  const [user, setUser] = useState(null);
+export default function Header({ onSyncComplete }) {
+  const navigate = useNavigate();
+  const {
+    user,
+    fetchProfile,
+    logoutUser,
+    logoutAllDevices,
+    updateGoogleDriveStatus,
+  } = useAuth();
+  const { darkMode, toggleTheme } = useTheme();
+  const { viewMode, setViewMode } = useUI();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showGoogleDrivePanel, setShowGoogleDrivePanel] = useState(false);
-  const navigate = useNavigate();
 
-  const fetchUserInfo = async () => {
-    try {
-      const { data, statusText } = await getProfile();
-      if (statusText === "OK") {
-        setUser(data);
-      } else {
-        showErrorToast(data.error);
-        navigate("/login");
-      }
-    } catch (error) {
-      console.error("Error fetching user info:", error);
-      showErrorToast(error.message);
-      navigate("/login");
-    }
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleLogout = async () => {
-    try {
-      const { data, statusText } = await logout();
-      if (statusText === "OK") {
-        showSuccessToast(data.message);
-        setTimeout(() => navigate("/login"), 500);
-      } else {
-        showErrorToast(data.error);
-      }
-    } catch (error) {
-      showErrorToast(error.message);
+    const result = await logoutUser();
+    if (result.success) {
+      showSuccessToast(result.payload.message);
+      setTimeout(() => navigate("/login"), 500);
+    } else {
+      showErrorToast(result.payload);
     }
   };
 
   const handleLogoutAll = async () => {
-    try {
-      const { data, statusText } = await logoutAll();
-      if (statusText === "OK") {
-        showSuccessToast(data.message);
-        setTimeout(() => navigate("/login"), 500);
-      } else {
-        showErrorToast(data.error);
-      }
-    } catch (error) {
-      showErrorToast(error.message);
+    const result = await logoutAllDevices();
+    if (result.success) {
+      showSuccessToast(result.payload.message);
+      setTimeout(() => navigate("/login"), 500);
+    } else {
+      showErrorToast(result.payload);
     }
   };
 
   const getInitials = (email) => (email ? email.charAt(0).toUpperCase() : "U");
 
-  useEffect(() => {
-    fetchUserInfo();
-  }, []);
-
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-700/80 dark:bg-gray-900/90">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between">
-            {/* Logo */}
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
                 <svg
@@ -82,15 +62,36 @@ export default function Header({
                   <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
               </div>
-              <h1 className="text-lg font-semibold tracking-tight text-slate-900">
+              <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-gray-100">
                 My files
               </h1>
             </div>
 
-            {/* Actions */}
+            <div className="hidden sm:flex flex-1 max-w-md mx-4">
+              <div className="relative w-full">
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search in My Drive"
+                  className="w-full rounded-lg bg-gray-100 pl-10 pr-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:bg-gray-800"
+                />
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
-              {/* View toggle */}
-              <div className="hidden sm:flex items-center rounded-lg bg-slate-100 p-0.5">
+              <div className="hidden sm:flex items-center rounded-lg bg-slate-100 p-0.5 dark:bg-gray-800">
                 {[
                   {
                     mode: "list",
@@ -105,11 +106,11 @@ export default function Header({
                 ].map(({ mode, title, path }) => (
                   <button
                     key={mode}
-                    onClick={() => onViewChange(mode)}
+                    onClick={() => setViewMode(mode)}
                     className={`rounded-md p-1.5 transition-all ${
                       viewMode === mode
-                        ? "bg-white text-blue-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
+                        ? "bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400"
+                        : "text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
                     title={title}
                   >
@@ -124,7 +125,42 @@ export default function Header({
                 ))}
               </div>
 
-              {/* Google Drive button */}
+              <button
+                onClick={toggleTheme}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 transition-colors dark:text-gray-400 dark:hover:bg-gray-800"
+                title={darkMode ? "Light mode" : "Dark mode"}
+              >
+                {darkMode ? (
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                )}
+              </button>
+
               <button
                 onClick={() => {
                   setShowGoogleDrivePanel(true);
@@ -132,7 +168,7 @@ export default function Header({
                 }}
                 className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
                   user?.googleDriveConnected
-                    ? "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300 hover:shadow-sm"
+                    ? "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300 hover:shadow-sm dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 dark:hover:ring-gray-600"
                     : "bg-[#1a73e8]/10 text-[#1a73e8] hover:bg-[#1a73e8]/15"
                 }`}
                 title="Google Drive"
@@ -140,29 +176,28 @@ export default function Header({
                 <GoogleDriveLogo className="h-4 w-4" />
                 <span className="hidden sm:inline">Drive</span>
                 {user?.googleDriveConnected && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />
                 )}
               </button>
 
-              {/* User menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-slate-100"
+                  className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-slate-100 dark:hover:bg-gray-800"
                 >
                   {user?.picture ? (
                     <img
-                      className="h-8 w-8 rounded-full ring-2 ring-white"
+                      className="h-8 w-8 rounded-full ring-2 ring-white dark:ring-gray-900"
                       src={user.picture}
                       alt=""
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full from-blue-500 to-blue-600 text-sm font-semibold text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white">
                       {user && getInitials(user.email)}
                     </div>
                   )}
                   <svg
-                    className={`hidden sm:block h-4 w-4 text-slate-400 transition-transform ${showUserMenu ? "rotate-180" : ""}`}
+                    className={`hidden sm:block h-4 w-4 text-slate-400 transition-transform dark:text-gray-500 ${showUserMenu ? "rotate-180" : ""}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -182,12 +217,12 @@ export default function Header({
                       className="fixed inset-0 z-40"
                       onClick={() => setShowUserMenu(false)}
                     />
-                    <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                    <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                      <div className="border-b border-slate-100 px-4 py-3 dark:border-gray-700">
+                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-gray-100">
                           {user?.username || "User"}
                         </p>
-                        <p className="truncate text-xs text-slate-500">
+                        <p className="truncate text-xs text-slate-500 dark:text-gray-400">
                           {user?.email}
                         </p>
                       </div>
@@ -197,7 +232,7 @@ export default function Header({
                             setShowUserMenu(false);
                             setShowGoogleDrivePanel(true);
                           }}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700"
                         >
                           <GoogleDriveLogo className="h-4 w-4" />
                           Google Drive settings
@@ -207,7 +242,7 @@ export default function Header({
                             handleLogout();
                             setShowUserMenu(false);
                           }}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                         >
                           <svg
                             className="h-4 w-4"
@@ -229,7 +264,7 @@ export default function Header({
                             handleLogoutAll();
                             setShowUserMenu(false);
                           }}
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                         >
                           Log out all devices
                         </button>
@@ -250,8 +285,7 @@ export default function Header({
         <GoogleDriveSettings
           googleDriveConnected={user?.googleDriveConnected || false}
           onStatusChange={(connected) => {
-            setUser((prev) => ({ ...prev, googleDriveConnected: connected }));
-            onGoogleDriveStatusChange?.(connected);
+            updateGoogleDriveStatus(connected);
           }}
           onSyncComplete={() => {
             onSyncComplete?.();
