@@ -34,3 +34,4 @@ Thumbs.db
 
 # Storage files (optional - uncomment if you don't want to commit storage files)
 server/storage/
+server-auth/storage/
