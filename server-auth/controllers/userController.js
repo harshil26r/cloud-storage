@@ -69,7 +69,7 @@ export const signup = async (req, res) => {
       .json({ message: `User Register Succesfully with email ${email}` });
   } catch (error) {
     session.abortTransaction();
-    res.status(500).json({ message: error });
+    res.status(500).json({ error: error.message });
   } finally {
     session.endSession();
   }

@@ -4,14 +4,17 @@ import {
   deleteFile,
   renameFile,
   serveFile,
-  uploadFIle,
+  uploadFile,
 } from '../controllers/fileController.js';
+import { getThumbnail } from '../controllers/thumbnailController.js';
 
 const fileRouter = Router();
 
+fileRouter.get('/thumbnail/:id', getThumbnail);
+
 fileRouter.get('/:id', serveFile);
 
-fileRouter.post('/', fileUploadMiddleware, uploadFIle);
+fileRouter.post('/', fileUploadMiddleware, uploadFile);
 
 fileRouter.route('/:id').patch(renameFile).delete(deleteFile);
 

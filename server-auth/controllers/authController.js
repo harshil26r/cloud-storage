@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import mongoose, { Types } from 'mongoose';
-import { OTP } from '../models/optModel.js';
+import { OTP } from '../models/otpModel.js';
 import { sendEmail } from '../services/sentEmail.js';
 import { emailTemplate } from '../utils/emailTemplate.js';
 import {

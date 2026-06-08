@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { readdir, rm, writeFile } from 'fs/promises';
-import mime from 'mime';
 import {
-  creatDirectory,
+  createDirectoryCtr,
   deleteDirectory,
   getDirectory,
   renameDirectory,
@@ -12,7 +10,7 @@ const dirRouter = Router();
 
 dirRouter.get('/{:id}', getDirectory);
 
-dirRouter.post('/{:parentDirId}', creatDirectory);
+dirRouter.post('/{:parentDirId}', createDirectoryCtr);
 
 dirRouter.route('/:id').patch(renameDirectory).delete(deleteDirectory);
 

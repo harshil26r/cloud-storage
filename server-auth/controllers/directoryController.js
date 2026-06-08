@@ -31,7 +31,7 @@ export const getDirectory = async (req, res) => {
   }
 };
 
-export const creatDirectory = async (req, res) => {
+export const createDirectoryCtr = async (req, res) => {
   try {
     const { user } = req;
 

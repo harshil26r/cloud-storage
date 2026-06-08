@@ -22,7 +22,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(cookieParser('fsdf'));
+app.use(cookieParser(process.env.COOKIE_SECRET || 'fsdf'));
 
 app.use((req, res, next) => {
   req.db = db;

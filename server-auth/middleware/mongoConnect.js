@@ -2,11 +2,9 @@ import { connect } from 'mongoose';
 
 export const connectDB = () => {
   try {
-    connect(
-      'mongodb://admin:admin@localhost:27017/storageDB?replicaSet=storageDB&authSource=admin',
-    );
+    connect(process.env.MONGODB_URI);
     console.log('DB connected');
   } catch (error) {
-    console.log('Eroor while connecting DB', error);
+    console.error('Error connecting to DB:', error);
   }
 };

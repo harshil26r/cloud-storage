@@ -79,7 +79,7 @@ export const serveFile = async (req, res) => {
   }
 };
 
-export const uploadFIle = async (req, res) => {
+export const uploadFile = async (req, res) => {
   const parentDirId = req.body.parentDirId;
   const { _id, extension, originalname } = req.file;
 
