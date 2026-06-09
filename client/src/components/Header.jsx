@@ -1,47 +1,53 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth } from "../contexts/AuthContext";
-import { useTheme } from "../contexts/ThemeContext";
-import { useUI } from "../contexts/UIContext";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  fetchProfile,
+  logoutUser,
+  logoutAllDevices,
+  updateGoogleDriveStatus,
+} from "../store/userSlice";
+import { toggleTheme } from "../store/themeSlice";
+import { setViewMode } from "../store/uiSlice";
 import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
 import { GoogleDriveSettings, GoogleDrivePanel } from "./GoogleDrive";
 import { GoogleDriveLogo } from "./GoogleDrive/icons";
 
 export default function Header({ onSyncComplete }) {
   const navigate = useNavigate();
-  const {
-    user,
-    fetchProfile,
-    logoutUser,
-    logoutAllDevices,
-    updateGoogleDriveStatus,
-  } = useAuth();
-  const { darkMode, toggleTheme } = useTheme();
-  const { viewMode, setViewMode } = useUI();
+  const dispatch = useDispatch();
+
+  const user = useSelector((state) => state.user.user);
+  const darkMode = useSelector((state) => state.theme.darkMode);
+  const viewMode = useSelector((state) => state.ui.viewMode);
+
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showGoogleDrivePanel, setShowGoogleDrivePanel] = useState(false);
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    dispatch(fetchProfile());
+  }, [dispatch]);
 
   const handleLogout = async () => {
-    const result = await logoutUser();
-    if (result.success) {
-      showSuccessToast(result.payload.message);
+    const result = await dispatch(logoutUser());
+
+    if (!result.error) {
+      showSuccessToast(result.payload?.message || "Logged out");
       setTimeout(() => navigate("/login"), 500);
     } else {
-      showErrorToast(result.payload);
+      showErrorToast(result.payload || "Logout failed");
     }
   };
 
   const handleLogoutAll = async () => {
-    const result = await logoutAllDevices();
-    if (result.success) {
-      showSuccessToast(result.payload.message);
+    const result = await dispatch(logoutAllDevices());
+    if (!result.error) {
+      showSuccessToast(
+        result.payload?.message || "Logged out from all devices",
+      );
       setTimeout(() => navigate("/login"), 500);
     } else {
-      showErrorToast(result.payload);
+      showErrorToast(result.payload || "Logout all failed");
     }
   };
 
@@ -106,7 +112,7 @@ export default function Header({ onSyncComplete }) {
                 ].map(({ mode, title, path }) => (
                   <button
                     key={mode}
-                    onClick={() => setViewMode(mode)}
+                    onClick={() => dispatch(setViewMode(mode))}
                     className={`rounded-md p-1.5 transition-all ${
                       viewMode === mode
                         ? "bg-white text-blue-600 shadow-sm dark:bg-gray-700 dark:text-blue-400"
@@ -126,7 +132,7 @@ export default function Header({ onSyncComplete }) {
               </div>
 
               <button
-                onClick={toggleTheme}
+                onClick={() => dispatch(toggleTheme())}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 transition-colors dark:text-gray-400 dark:hover:bg-gray-800"
                 title={darkMode ? "Light mode" : "Dark mode"}
               >
@@ -285,7 +291,7 @@ export default function Header({ onSyncComplete }) {
         <GoogleDriveSettings
           googleDriveConnected={user?.googleDriveConnected || false}
           onStatusChange={(connected) => {
-            updateGoogleDriveStatus(connected);
+            dispatch(updateGoogleDriveStatus(connected));
           }}
           onSyncComplete={() => {
             onSyncComplete?.();

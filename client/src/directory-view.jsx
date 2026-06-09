@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useUI } from "./contexts/UIContext";
+import { useSelector, useDispatch } from "react-redux";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import BreadcrumbNav from "./components/BreadcrumbNav";
@@ -11,47 +11,48 @@ import FileThumbnail from "./components/FileThumbnail";
 import RenameDialog from "./components/action/RenameDialog";
 import CreateFolderDialog from "./components/action/CreateFolderDialog";
 import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
-import { deleteFile, renameFile } from "./api/fileAPI";
 import {
-  createDirectory,
-  deleteDirectory,
-  getDirectories,
-  updateDirectory,
-} from "./api/directoryAPI";
+  fetchDirectories,
+  createDir,
+  updateDir,
+  deleteDir,
+} from "./store/directorySlice";
+import { deleteSingleFile, renameFileAction } from "./store/fileSlice";
 import {
-  deleteGoogleFile,
-  makeFileOffline,
-  uploadToGoogleDrive,
-} from "./api/googleDriveAPI";
+  deleteGDriveFile,
+  makeGDriveOffline,
+  uploadGDriveFile,
+} from "./store/googleDriveSlice";
 import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function DirectoryView() {
-  const [fileList, setFileList] = useState([]);
-  const [directoryList, setDirectoryList] = useState([]);
   const [newFileName, setNewFileName] = useState("");
-  const [currentDir, setCurrentDir] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [renamingItem, setRenamingItem] = useState(null);
-  const { viewMode } = useUI();
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { directoryId } = useParams();
+
+  // Redux Selectors
+  const viewMode = useSelector((state) => state.ui.viewMode);
+  const {
+    directories: directoryList,
+    files: fileList,
+    currentDir,
+    loading,
+  } = useSelector((state) => state.directory);
 
   const isGoogleDriveFolder = !!currentDir?.googleId;
 
-  const getAllFiles = useCallback(async (signal) => {
-    const { data, statusText } = await getDirectories(directoryId, { signal });
-    if (statusText === "OK") {
-      setFileList(data?.files);
-      setDirectoryList(data?.directories);
-      setCurrentDir(data);
-    }
-  }, [directoryId]);
+  const getAllFiles = useCallback(() => {
+    dispatch(fetchDirectories(directoryId || ""));
+  }, [dispatch, directoryId]);
 
-  const handleDelete = async (_id, isFile, item) => {
+  const handleDelete = useCallback(async (_id, isFile, item) => {
     try {
       if (isFile && item?.googleId) {
         const deleteLocal =
@@ -61,11 +62,14 @@ function DirectoryView() {
           : "Delete this file from Google Drive?";
         if (!window.confirm(confirmMsg)) return;
 
-        const { data, statusText } = await deleteGoogleFile(_id, deleteLocal);
-        if (statusText === "OK") {
-          showSuccessToast(data.message);
+        const result = await dispatch(
+          deleteGDriveFile({ fileId: _id, deleteLocal }),
+        );
+        if (!result.error) {
+          showSuccessToast(result.payload.message);
+          getAllFiles();
         } else {
-          showErrorToast(data.error || data.message);
+          showErrorToast(result.payload || "Failed to delete file");
         }
       } else if (!isFile && item?.googleId) {
         const isVirtualRoot = item.googleId === "root";
@@ -74,11 +78,12 @@ function DirectoryView() {
           : "Delete this folder and all its contents from Google Drive?";
         if (!window.confirm(confirmMsg)) return;
 
-        const { data, statusText } = await deleteDirectory(_id);
-        if (statusText === "OK") {
-          showSuccessToast(data.message);
+        const result = await dispatch(deleteDir(_id));
+        if (!result.error) {
+          showSuccessToast(result.payload.message);
+          getAllFiles();
         } else {
-          showErrorToast(data.message || data.error);
+          showErrorToast(result.payload || "Failed to delete directory");
         }
       } else {
         const confirmMsg = isFile
@@ -86,27 +91,27 @@ function DirectoryView() {
           : "Delete this folder and everything inside it?";
         if (!window.confirm(confirmMsg)) return;
 
-        const { data, statusText } = isFile
-          ? await deleteFile(_id)
-          : await deleteDirectory(_id);
+        const result = isFile
+          ? await dispatch(deleteSingleFile(_id))
+          : await dispatch(deleteDir(_id));
 
-        if (statusText === "OK") {
-          showSuccessToast(data.message);
+        if (!result.error) {
+          showSuccessToast(result.payload.message);
+          getAllFiles();
         } else {
-          showErrorToast(data.message || data.error);
+          showErrorToast(result.payload || "Failed to delete");
         }
       }
     } catch (error) {
       console.error("Error deleting:", error);
       showErrorToast(error.message);
     }
-    getAllFiles();
-  };
+  }, []);
 
-  const handleRename = (oldFileName, _id, isFile) => {
+  const handleRename = useCallback((oldFileName, _id, isFile) => {
     setNewFileName(oldFileName);
     setRenamingItem({ _id, isFile });
-  };
+  }, []);
 
   const handleSaveFileName = async () => {
     if (!renamingItem || !newFileName.trim()) {
@@ -118,18 +123,18 @@ function DirectoryView() {
     const newFile = `${newFileName.trim()}`;
 
     try {
-      const { data, statusText } = isFile
-        ? await renameFile(_id, newFile)
-        : await updateDirectory(_id, newFile);
+      const result = isFile
+        ? await dispatch(renameFileAction({ fileId: _id, newName: newFile }))
+        : await dispatch(updateDir({ directoryId: _id, name: newFile }));
 
-      if (statusText === "OK") {
-        showSuccessToast(data.message);
+      if (!result.error) {
+        showSuccessToast(result.payload.message);
+        getAllFiles();
       } else {
-        showErrorToast(data?.message || data?.error);
+        showErrorToast(result.payload || "Failed to rename");
       }
       setNewFileName("");
       setRenamingItem(null);
-      await getAllFiles();
     } catch (error) {
       console.error("Error renaming:", error);
       showErrorToast(error.message);
@@ -140,33 +145,33 @@ function DirectoryView() {
     return `${isFile ? `${BASE_URL}file` : "/directory"}/${_id}`;
   };
 
-  const handleOpenFile = (item) => {
+  const handleOpenFile = useCallback((item) => {
     window.open(getUrl(item._id, true) + "?action=open");
-  };
+  }, []);
 
-  const handleDownloadFile = (item) => {
+  const handleDownloadFile = useCallback((item) => {
     window.location.href = getUrl(item._id, true) + "?action=download";
-  };
+  }, []);
 
-  const handleMakeOffline = async (item) => {
+  const handleMakeOffline = useCallback(async (item) => {
     try {
-      const { data, statusText } = await makeFileOffline(item._id);
-      if (statusText === "OK" || statusText === "Accepted") {
-        showSuccessToast(data.message);
+      const result = await dispatch(makeGDriveOffline(item._id));
+      if (!result.error) {
+        showSuccessToast(result.payload.message);
         getAllFiles();
       } else {
-        showErrorToast(data.error || "Failed to start download");
+        showErrorToast(result.payload || "Failed to make file offline");
       }
     } catch (error) {
       showErrorToast(error.message);
     }
-  };
+  }, []);
 
-  const handleOpenInDrive = (item) => {
+  const handleOpenInDrive = useCallback((item) => {
     if (item.webViewLink) {
       window.open(item.webViewLink, "_blank");
     }
-  };
+  }, []);
 
   const uploadFileInCurrentDir = async (e) => {
     const file = e.target.files[0];
@@ -178,16 +183,16 @@ function DirectoryView() {
       form.append("parentDirId", parentId);
 
       try {
-        const { data, statusText } = await uploadToGoogleDrive(form);
-        if (statusText === "Created") {
-          showSuccessToast(data.message);
+        const result = await dispatch(uploadGDriveFile(form));
+        if (!result.error) {
+          showSuccessToast(result.payload.message);
+          getAllFiles();
         } else {
-          showErrorToast(data.error || "Upload failed");
+          showErrorToast(result.payload || "Upload failed");
         }
       } catch (error) {
         showErrorToast(error.message);
       }
-      getAllFiles();
       e.target.value = "";
       return;
     }
@@ -203,17 +208,18 @@ function DirectoryView() {
         const response = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300) {
           showSuccessToast(response.message);
+          getAllFiles();
         } else {
           showErrorToast(response.message || response.error);
         }
       } catch (parseError) {
         if (xhr.status >= 200 && xhr.status < 300) {
           showSuccessToast("File uploaded successfully!");
+          getAllFiles();
         } else {
           showErrorToast(`Failed to upload file : ${parseError}`);
         }
       }
-      getAllFiles();
       e.target.value = "";
     });
     xhr.addEventListener("error", () => {
@@ -228,42 +234,63 @@ function DirectoryView() {
       return;
     }
     try {
-      const { data, statusText } = await createDirectory(
-        newFolderName.trim(),
-        directoryId || currentDir?._id,
+      const result = await dispatch(
+        createDir({
+          name: newFolderName.trim(),
+          parentDirId: directoryId || currentDir?._id,
+        }),
       );
-      if (statusText === "Created") {
-        showSuccessToast(data.message);
+      console.log(result);
+
+      if (!result.error) {
+        showSuccessToast(result.payload.message);
+        getAllFiles();
       } else {
-        showErrorToast(data.message || data.error);
+        showErrorToast(result.payload || "Failed to create folder");
       }
       setNewFolderName("");
       setShowCreateFolder(false);
-      await getAllFiles();
     } catch (error) {
       console.error("Error creating folder:", error);
       showErrorToast(error.message);
     }
   };
 
-  const fileItemProps = useMemo(() => (item) => ({
-    item,
-    onOpen: () => handleOpenFile(item),
-    onDownload: () => handleDownloadFile(item),
-    onRename: () => handleRename(item?.name, item?._id, true),
-    onDelete: () => handleDelete(item?._id, true, item),
-    onMakeOffline: () => handleMakeOffline(item),
-    onOpenInDrive: () => handleOpenInDrive(item),
-    onStatusChange: getAllFiles,
-  }), [handleOpenFile, handleDownloadFile, handleRename, handleDelete, handleMakeOffline, handleOpenInDrive, getAllFiles]);
+  const fileItemProps = useMemo(
+    () => (item) => ({
+      item,
+      onOpen: () => handleOpenFile(item),
+      onDownload: () => handleDownloadFile(item),
+      onRename: () => handleRename(item?.name, item?._id, true),
+      onDelete: () => handleDelete(item?._id, true, item),
+      onMakeOffline: () => handleMakeOffline(item),
+      onOpenInDrive: () => handleOpenInDrive(item),
+      onStatusChange: getAllFiles,
+    }),
+    [
+      handleOpenFile,
+      handleDownloadFile,
+      handleRename,
+      handleDelete,
+      handleMakeOffline,
+      handleOpenInDrive,
+      getAllFiles,
+    ],
+  );
 
   useEffect(() => {
-    const controller = new AbortController();
-    getAllFiles(controller.signal);
-    return () => controller.abort();
+    getAllFiles();
   }, [getAllFiles]);
 
   const hasItems = fileList?.length > 0 || directoryList?.length > 0;
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">

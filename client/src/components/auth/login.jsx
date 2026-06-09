@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
-import { login, sendOtp, verifyOtp } from "../../api";
+import { loginUser, fetchProfile } from "../../store/userSlice";
+import { sendOtpAction, verifyOtpAction, verifyGoogleTokenAction } from "../../store/authSlice";
 import OtpVerification from "./OtpVerification";
 import { GoogleLogin } from "@react-oauth/google";
-import { verifyGoogleToken } from "../../api/authAPI";
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [step, setStep] = useState("credentials");
   const [loading, setLoading] = useState(false);
@@ -34,21 +36,18 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const { data: loginData, statusText } = await login(
-        data.email,
-        data.password,
-      );
+      const result = await dispatch(loginUser({ email: data.email, password: data.password }));
 
-      if (statusText === "OK") {
+      if (!result.error) {
         try {
-          await sendOtp(data.email);
+          await dispatch(sendOtpAction(data.email)).unwrap();
           showSuccessToast("OTP sent to your email");
           setStep("otp");
         } catch (otpError) {
-          showErrorToast(otpError.message);
+          showErrorToast(otpError || "Failed to send OTP");
         }
       } else {
-        showErrorToast(loginData.error || "Login failed");
+        showErrorToast(result.payload || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -60,27 +59,26 @@ const Login = () => {
 
   const handleVerifyOtp = async (otpCode) => {
     try {
-      const { statusText } = await verifyOtp(data.email, otpCode);
-      if (statusText === "OK") {
-        showSuccessToast("Login successful");
-        setTimeout(() => {
-          navigate("/");
-        }, 500);
-      }
+      await dispatch(verifyOtpAction({ email: data.email, otp: otpCode })).unwrap();
+      showSuccessToast("Login successful");
+      dispatch(fetchProfile());
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
     } catch (error) {
       console.error("Verify OTP error:", error);
-      showErrorToast(error.message || "Invalid OTP");
-      throw error;
+      showErrorToast(error || "Invalid OTP");
+      throw new Error(error);
     }
   };
 
   const handleResendOtp = async () => {
     try {
-      await sendOtp(data.email);
+      await dispatch(sendOtpAction(data.email)).unwrap();
       showSuccessToast("OTP resent successfully");
     } catch (error) {
       console.error("Resend OTP error:", error);
-      showErrorToast(error.message || "Failed to resend OTP");
+      showErrorToast(error || "Failed to resend OTP");
     }
   };
 
@@ -155,19 +153,19 @@ const Login = () => {
                       onSuccess={async (credentialResponse) => {
                         const tokenId = credentialResponse.credential;
                         try {
-                          const { statusText } =
-                            await verifyGoogleToken(tokenId);
-                          if (statusText === "OK") {
+                          const result = await dispatch(verifyGoogleTokenAction(tokenId));
+                          if (!result.error) {
                             showSuccessToast("Google login successful");
+                            dispatch(fetchProfile());
                             setTimeout(() => {
                               navigate("/");
                             }, 500);
+                          } else {
+                            showErrorToast(result.payload || "Google login failed");
                           }
                         } catch (error) {
                           console.error("Google login error:", error);
-                          showErrorToast(
-                            error.message || "Google login failed",
-                          );
+                          showErrorToast(error.message || "Google login failed");
                         }
                       }}
                       onError={() => {

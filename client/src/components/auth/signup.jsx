@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
-import { signup, sendOtp, verifyOtp } from "../../api";
+import { signupUser, fetchProfile } from "../../store/userSlice";
+import { sendOtpAction, verifyOtpAction, verifyGoogleTokenAction } from "../../store/authSlice";
 import OtpVerification from "./OtpVerification";
 import { GoogleLogin } from "@react-oauth/google";
-import { verifyGoogleToken } from "../../api/authAPI";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [step, setStep] = useState("form");
   const [loading, setLoading] = useState(false);
@@ -89,12 +91,12 @@ const SignUp = () => {
 
     setLoading(true);
     try {
-      await sendOtp(data.email);
+      await dispatch(sendOtpAction(data.email)).unwrap();
       showSuccessToast("OTP sent to your email");
       setStep("otp");
     } catch (error) {
       console.error("Send OTP error:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -102,40 +104,41 @@ const SignUp = () => {
 
   const handleVerifyOtp = async (otpCode) => {
     try {
-      await verifyOtp(data.email, otpCode);
+      await dispatch(verifyOtpAction({ email: data.email, otp: otpCode })).unwrap();
       await handleCompleteSignup();
     } catch (error) {
       console.error("OTP/Signup error:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Invalid OTP");
     }
   };
 
   const handleResendOtp = async () => {
     try {
-      await sendOtp(data.email);
+      await dispatch(sendOtpAction(data.email)).unwrap();
       showSuccessToast("OTP resent successfully");
     } catch (error) {
       console.error("Resend OTP error:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Failed to resend OTP");
     }
   };
 
   const handleCompleteSignup = async () => {
     try {
-      const { data: signupData } = await signup({
+      const result = await dispatch(signupUser({
         username: data.username,
         email: data.email,
         password: data.password,
-      });
-      showSuccessToast(signupData.message || "Registration successful");
+      })).unwrap();
+      showSuccessToast(result.message || "Registration successful");
       setTimeout(() => {
         navigate("/login");
       }, 500);
     } catch (error) {
       console.error("Signup error:", error);
-      showErrorToast(error.message);
+      showErrorToast(error || "Signup failed");
     }
   };
+
   return (
     <>
       <div className="flex min-h-screen justify-center items-center flex-col w-full px-3 mb-5 lg:px-8 bg-white dark:bg-gray-950">
@@ -192,7 +195,7 @@ const SignUp = () => {
                       name="email"
                       type="text"
                       autoComplete="email"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.email && (
@@ -214,7 +217,7 @@ const SignUp = () => {
                       name="password"
                       type="password"
                       autoComplete="password"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.password && (
@@ -236,7 +239,7 @@ const SignUp = () => {
                       name="cPassword"
                       type="password"
                       autoComplete="password"
-                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
+                      className="block w-full rounded-md border-0 py-1.5 px-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                     />
                   </div>
                   {errors.cPassword && (
@@ -284,12 +287,15 @@ const SignUp = () => {
                     onSuccess={async (credentialResponse) => {
                       const tokenId = credentialResponse.credential;
                       try {
-                        const { statusText } = await verifyGoogleToken(tokenId);
-                        if (statusText === "OK") {
+                        const result = await dispatch(verifyGoogleTokenAction(tokenId));
+                        if (!result.error) {
                           showSuccessToast("Google login successful");
+                          dispatch(fetchProfile());
                           setTimeout(() => {
                             navigate("/");
                           }, 500);
+                        } else {
+                          showErrorToast(result.payload || "Google login failed");
                         }
                       } catch (error) {
                         console.error("Google login error:", error);
