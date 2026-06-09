@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as directoryAPI from "../api/directoryAPI";
+import * as shareAPI from "../api/shareAPI";
 
 export const fetchDirectories = createAsyncThunk(
   "directory/fetchDirectories",
@@ -7,6 +8,18 @@ export const fetchDirectories = createAsyncThunk(
     try {
       const response = await directoryAPI.getDirectories(directoryId);
       return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const fetchSharedWithMe = createAsyncThunk(
+  "directory/fetchSharedWithMe",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await shareAPI.getSharedWithMe();
+      return response;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -111,6 +124,20 @@ const directorySlice = createSlice({
         state.currentDir = action.payload || null;
       })
       .addCase(fetchDirectories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(fetchSharedWithMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSharedWithMe.fulfilled, (state, action) => {
+        state.loading = false;
+        state.directories = action.payload?.directories || [];
+        state.files = action.payload?.files || [];
+        state.currentDir = { name: "Shared with me", isVirtualSharedRoot: true };
+      })
+      .addCase(fetchSharedWithMe.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
       });

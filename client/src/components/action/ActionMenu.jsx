@@ -9,6 +9,7 @@ export default function ActionMenu({
   onDelete,
   onMakeOffline,
   onOpenInDrive,
+  onShare,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isGoogleFile = isFile && item?.googleId;
@@ -135,6 +136,28 @@ export default function ActionMenu({
                   />
                 </svg>
                 Open in Drive
+              </button>
+            )}
+
+            {onShare && (
+              <button
+                onClick={() => handleAction(onShare)}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
+              >
+                <svg
+                  className="h-4 w-4 text-indigo-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+                Share
               </button>
             )}
 

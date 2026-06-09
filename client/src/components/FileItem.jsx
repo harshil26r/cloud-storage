@@ -12,6 +12,7 @@ export default function FileItem({
   onMakeOffline,
   onOpenInDrive,
   onStatusChange,
+  onShare,
 }) {
   const [showActions, setShowActions] = useState(false);
   const modifiedDate = item?.modifiedAt || item?.modified;
@@ -48,6 +49,7 @@ export default function FileItem({
               onMakeOffline={onMakeOffline}
               onOpenInDrive={onOpenInDrive}
               onStatusChange={onStatusChange}
+              onShare={onShare}
             />
           </div>
         </div>
@@ -107,6 +109,7 @@ export default function FileItem({
             onMakeOffline={onMakeOffline}
             onOpenInDrive={onOpenInDrive}
             onStatusChange={onStatusChange}
+            onShare={onShare}
           />
         </div>
       </td>

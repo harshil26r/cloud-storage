@@ -6,13 +6,16 @@ import Sidebar from "./components/Sidebar";
 import BreadcrumbNav from "./components/BreadcrumbNav";
 import FileItem from "./components/FileItem";
 import FolderItem from "./components/FolderItem";
+import ActionMenu from "./components/action/ActionMenu";
 import EmptyState from "./components/EmptyState";
 import FileThumbnail from "./components/FileThumbnail";
 import RenameDialog from "./components/action/RenameDialog";
 import CreateFolderDialog from "./components/action/CreateFolderDialog";
+import ShareDialog from "./components/action/ShareDialog";
 import { showSuccessToast, showErrorToast } from "./utils/toastConfig";
 import {
   fetchDirectories,
+  fetchSharedWithMe,
   createDir,
   updateDir,
   deleteDir,
@@ -27,11 +30,12 @@ import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-function DirectoryView() {
+function DirectoryView({ isSharedMode = false }) {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [renamingItem, setRenamingItem] = useState(null);
+  const [sharingItem, setSharingItem] = useState(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -49,8 +53,12 @@ function DirectoryView() {
   const isGoogleDriveFolder = !!currentDir?.googleId;
 
   const getAllFiles = useCallback(() => {
-    dispatch(fetchDirectories(directoryId || ""));
-  }, [dispatch, directoryId]);
+    if (isSharedMode) {
+      dispatch(fetchSharedWithMe());
+    } else {
+      dispatch(fetchDirectories(directoryId || ""));
+    }
+  }, [dispatch, directoryId, isSharedMode]);
 
   const handleDelete = useCallback(async (_id, isFile, item) => {
     try {
@@ -240,7 +248,6 @@ function DirectoryView() {
           parentDirId: directoryId || currentDir?._id,
         }),
       );
-      console.log(result);
 
       if (!result.error) {
         showSuccessToast(result.payload.message);
@@ -266,6 +273,8 @@ function DirectoryView() {
       onMakeOffline: () => handleMakeOffline(item),
       onOpenInDrive: () => handleOpenInDrive(item),
       onStatusChange: getAllFiles,
+      onShare: () =>
+        setSharingItem({ _id: item._id, name: item.name, isFile: true }),
     }),
     [
       handleOpenFile,
@@ -317,48 +326,50 @@ function DirectoryView() {
                 onBack={() => navigate(`/directory/${currentDir.parentDirId}`)}
               />
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowCreateFolder(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {!isSharedMode && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowCreateFolder(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    New folder
+                  </button>
+                  <label className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 cursor-pointer transition-colors">
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                    Upload
+                    <input
+                      type="file"
+                      onChange={uploadFileInCurrentDir}
+                      className="hidden"
                     />
-                  </svg>
-                  New folder
-                </button>
-                <label className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 cursor-pointer transition-colors">
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  Upload
-                  <input
-                    type="file"
-                    onChange={uploadFileInCurrentDir}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+                  </label>
+                </div>
+              )}
             </div>
 
             <CreateFolderDialog
@@ -382,6 +393,14 @@ function DirectoryView() {
                 setNewFileName("");
                 setRenamingItem(null);
               }}
+            />
+
+            <ShareDialog
+              isOpen={!!sharingItem}
+              itemId={sharingItem?._id}
+              isFile={sharingItem?.isFile}
+              onClose={() => setSharingItem(null)}
+              onShareSuccess={getAllFiles}
             />
 
             {!hasItems ? (
@@ -416,6 +435,13 @@ function DirectoryView() {
                               handleRename(item?.name, item?._id, false)
                             }
                             onDelete={() => handleDelete(item?._id, false)}
+                            onShare={() =>
+                              setSharingItem({
+                                _id: item._id,
+                                name: item.name,
+                                isFile: false,
+                              })
+                            }
                           />
                         ))}
                         {fileList?.map((item) => (
@@ -442,6 +468,13 @@ function DirectoryView() {
                           handleRename(item?.name, item?._id, false)
                         }
                         onDelete={() => handleDelete(item?._id, false)}
+                        onShare={() =>
+                          setSharingItem({
+                            _id: item._id,
+                            name: item.name,
+                            isFile: false,
+                          })
+                        }
                       />
                     ))}
                     {fileList?.map((item) => (
@@ -454,52 +487,92 @@ function DirectoryView() {
                   </div>
                 )}
 
-                <div className="md:hidden space-y-2">
-                  {directoryList?.map((item) => (
-                    <div
-                      key={`dir-mobile-${item._id}`}
-                      className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
-                      onDoubleClick={() => navigate(getUrl(item?._id, false))}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg
-                          className="w-6 h-6 shrink-0 text-amber-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                        </svg>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                            {item?.name}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {item?.googleId ? "Drive folder" : "Folder"}
-                          </p>
+                {viewMode === "list" && (
+                  <div className="md:hidden space-y-2">
+                    {directoryList?.map((item) => (
+                      <div
+                        key={`dir-mobile-${item._id}`}
+                        className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div
+                            className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                            onClick={() => navigate(getUrl(item?._id, false))}
+                          >
+                            <svg
+                              className="w-6 h-6 shrink-0 text-amber-400"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                            </svg>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                                {item?.name}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {item?.googleId ? "Drive folder" : "Folder"}
+                              </p>
+                            </div>
+                          </div>
+                          <div
+                            className="shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ActionMenu
+                              item={item}
+                              isFile={false}
+                              onOpen={() => navigate(getUrl(item?._id, false))}
+                              onRename={() =>
+                                handleRename(item?.name, item?._id, false)
+                              }
+                              onDelete={() => handleDelete(item?._id, false)}
+                              onShare={() =>
+                                setSharingItem({
+                                  _id: item._id,
+                                  name: item.name,
+                                  isFile: false,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  {fileList?.map((item) => (
-                    <div
-                      key={`file-mobile-${item._id}`}
-                      className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
-                      onDoubleClick={() => handleOpenFile(item)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileThumbnail item={item} size="sm" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                            {item?.name}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {item?.googleId ? "Drive" : "File"}
-                          </p>
+                    ))}
+                    {fileList?.map((item) => (
+                      <div
+                        key={`file-mobile-${item._id}`}
+                        className="bg-white border border-gray-200 rounded-lg p-3 dark:bg-gray-900 dark:border-gray-700"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div
+                            className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                            onClick={() => handleOpenFile(item)}
+                          >
+                            <FileThumbnail item={item} size="sm" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                                {item?.name}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {item?.googleId ? "Drive" : "File"}
+                              </p>
+                            </div>
+                          </div>
+                          <div
+                            className="shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ActionMenu
+                              isFile={true}
+                              {...fileItemProps(item)}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>

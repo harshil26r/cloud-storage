@@ -815,3 +815,95 @@ export const verifyFileOwnership = async (fileId, userId) => {
 
   return file;
 };
+
+/**
+ * Sync permissions with Google Drive permissions API
+ */
+export const syncGDrivePermissions = async (
+  googleId,
+  accessToken,
+  refreshToken,
+  userId,
+  sharedWith,
+  generalAccess,
+) => {
+  sharedWith = sharedWith || [];
+  const { accessToken: validToken } = await ensureValidToken(
+    accessToken,
+    refreshToken,
+    userId,
+  );
+  const drive = createDriveClient(validToken, refreshToken);
+
+  // Get existing permissions
+  const res = await drive.permissions.list({
+    fileId: googleId,
+    fields: 'permissions(id, emailAddress, role, type)',
+  });
+  const existingPerms = res.data.permissions || [];
+
+  // 1. Sync general access
+  const anyonePerm = existingPerms.find((p) => p.type === 'anyone');
+  if (generalAccess === 'anyone_view') {
+    if (!anyonePerm) {
+      await drive.permissions.create({
+        fileId: googleId,
+        requestBody: { role: 'reader', type: 'anyone' },
+      });
+    }
+  } else {
+    if (anyonePerm) {
+      await drive.permissions.delete({
+        fileId: googleId,
+        permissionId: anyonePerm.id,
+      });
+    }
+  }
+
+  // 2. Sync direct shares
+  // Delete permissions not in the new sharedWith list
+  for (const perm of existingPerms) {
+    if (perm.role === 'owner') continue;
+    if (perm.type === 'user' && perm.emailAddress) {
+      const match = sharedWith.find(
+        (s) => s.email?.toLowerCase() === perm.emailAddress.toLowerCase(),
+      );
+      if (!match) {
+        await drive.permissions.delete({
+          fileId: googleId,
+          permissionId: perm.id,
+        });
+      } else {
+        const expectedGDriveRole =
+          match.role === 'editor' ? 'writer' : 'reader';
+        if (perm.role !== expectedGDriveRole) {
+          // Update permission role
+          await drive.permissions.update({
+            fileId: googleId,
+            permissionId: perm.id,
+            requestBody: { role: expectedGDriveRole },
+          });
+        }
+      }
+    }
+  }
+
+  // Add new permissions
+  for (const share of sharedWith) {
+    if (share.email) {
+      const exists = existingPerms.some(
+        (p) => p.emailAddress?.toLowerCase() === share.email.toLowerCase(),
+      );
+      if (!exists) {
+        await drive.permissions.create({
+          fileId: googleId,
+          requestBody: {
+            role: share.role === 'editor' ? 'writer' : 'reader',
+            type: 'user',
+            emailAddress: share.email,
+          },
+        });
+      }
+    }
+  }
+};

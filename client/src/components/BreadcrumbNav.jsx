@@ -43,7 +43,7 @@ export default function BreadcrumbNav({ currentDir, onBack }) {
         ))
       ) : (
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          My Drive
+          {currentDir?.name || "My Drive"}
         </span>
       )}
     </div>

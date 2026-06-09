@@ -21,6 +21,21 @@ const directorySchema = new Schema(
     owners: [{ type: String }],
     shared: { type: Boolean, default: false },
     modifiedAt: { type: Date },
+    sharedWith: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: 'User' },
+        email: { type: String },
+        role: { type: String, enum: ['viewer', 'editor'], default: 'viewer' },
+      },
+    ],
+    generalAccess: {
+      type: String,
+      enum: ['restricted', 'anyone_view'],
+      default: 'restricted',
+    },
+    settings: {
+      allowEditorShare: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,
