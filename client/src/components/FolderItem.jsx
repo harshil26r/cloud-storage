@@ -11,6 +11,7 @@ export default function FolderItem({
   isTrashMode,
   onRestore,
   onDeletePermanently,
+  onToggleStar,
 }) {
   const [showActions, setShowActions] = useState(false);
 
@@ -31,9 +32,16 @@ export default function FolderItem({
         </div>
         <div className="px-3 py-2.5 flex items-center justify-between gap-1">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-800 truncate dark:text-gray-200">
-              {item?.name}
-            </p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-sm text-gray-800 truncate dark:text-gray-200">
+                {item?.name}
+              </p>
+              {item?.isStarred && (
+                <svg className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              )}
+            </div>
             <p className="text-xs text-gray-400 dark:text-gray-500">
               {item?.googleId ? "Google Drive" : "Folder"}
             </p>
@@ -49,6 +57,9 @@ export default function FolderItem({
               isTrashMode={isTrashMode}
               onRestore={onRestore}
               onDeletePermanently={onDeletePermanently}
+              item={item}
+              isFile={false}
+              onToggleStar={onToggleStar}
             />
           </div>
         </div>
@@ -72,9 +83,16 @@ export default function FolderItem({
           >
             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
-          <span className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-            {item?.name}
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+              {item?.name}
+            </span>
+            {item?.isStarred && (
+              <svg className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            )}
+          </div>
         </div>
       </td>
       <td className="px-4 py-2.5 text-sm text-gray-500 whitespace-nowrap sm:table-cell dark:text-gray-400">
@@ -104,6 +122,9 @@ export default function FolderItem({
             isTrashMode={isTrashMode}
             onRestore={onRestore}
             onDeletePermanently={onDeletePermanently}
+            item={item}
+            isFile={false}
+            onToggleStar={onToggleStar}
           />
         </div>
       </td>

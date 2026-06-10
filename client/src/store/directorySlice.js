@@ -126,6 +126,18 @@ export const emptyTrashBin = createAsyncThunk(
   }
 );
 
+export const fetchStarredItems = createAsyncThunk(
+  "directory/fetchStarredItems",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/directory/starred");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 const directorySlice = createSlice({
   name: "directory",
   initialState: {
@@ -177,6 +189,20 @@ const directorySlice = createSlice({
         state.currentDir = { name: "Trash", isTrashMode: true };
       })
       .addCase(fetchTrashBin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchStarredItems.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStarredItems.fulfilled, (state, action) => {
+        state.loading = false;
+        state.directories = action.payload.directories || [];
+        state.files = action.payload.files || [];
+        state.currentDir = { name: "Starred", isStarredMode: true };
+      })
+      .addCase(fetchStarredItems.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

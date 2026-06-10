@@ -14,6 +14,10 @@ export const router = createBrowserRouter([
     element: <DirectoryView isSharedMode={true} />,
   },
   {
+    path: "/starred",
+    element: <DirectoryView isStarredMode={true} />,
+  },
+  {
     path: "/trash",
     element: <DirectoryView isTrashMode={true} />,
   },

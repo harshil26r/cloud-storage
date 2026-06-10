@@ -13,6 +13,7 @@ export default function ActionMenu({
   isTrashMode,
   onRestore,
   onDeletePermanently,
+  onToggleStar,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isGoogleFile = isFile && item?.googleId;
@@ -206,6 +207,28 @@ export default function ActionMenu({
                   />
                 </svg>
                 Share
+              </button>
+            )}
+
+            {onToggleStar && (
+              <button
+                onClick={() => handleAction(onToggleStar)}
+                className={`${menuItemClass} text-slate-700 hover:bg-slate-50 dark:text-gray-300 dark:hover:bg-gray-700`}
+              >
+                <svg
+                  className={`h-4 w-4 text-amber-500 ${item?.isStarred ? "fill-amber-500" : ""}`}
+                  fill={item?.isStarred ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.246.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.175 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118L2.98 10.1c-.773-.565-.373-1.81.587-1.81h4.907a1 1 0 00.95-.69l1.519-4.674z"
+                  />
+                </svg>
+                {item?.isStarred ? "Remove star" : "Star item"}
               </button>
             )}
 

@@ -18,22 +18,22 @@ import {
   fetchSharedWithMe,
   createDir,
   updateDir,
-  deleteDir,
   fetchTrashBin,
   emptyTrashBin,
+  fetchStarredItems,
 } from "./store/directorySlice";
-import { deleteSingleFile, renameFileAction } from "./store/fileSlice";
-import {
-  deleteGDriveFile,
-  makeGDriveOffline,
-  uploadGDriveFile,
-} from "./store/googleDriveSlice";
+import { renameFileAction } from "./store/fileSlice";
+import { makeGDriveOffline, uploadGDriveFile } from "./store/googleDriveSlice";
 import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
 import axiosInstance from "./api/axiosInstance";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
+function DirectoryView({
+  isSharedMode = false,
+  isTrashMode = false,
+  isStarredMode = false,
+}) {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -60,47 +60,85 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
       dispatch(fetchTrashBin());
     } else if (isSharedMode) {
       dispatch(fetchSharedWithMe());
+    } else if (isStarredMode) {
+      dispatch(fetchStarredItems());
     } else {
       dispatch(fetchDirectories(directoryId || ""));
     }
-  }, [dispatch, directoryId, isSharedMode, isTrashMode]);
+  }, [dispatch, directoryId, isSharedMode, isTrashMode, isStarredMode]);
 
-  const handleTrash = useCallback(async (_id, isFile) => {
-    try {
-      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/trash`;
-      await axiosInstance.patch(endpoint);
-      showSuccessToast("Moved to Trash");
-      getAllFiles();
-    } catch (error) {
-      showErrorToast(error.response?.data?.error || error.message);
-    }
-  }, [getAllFiles]);
+  const handleToggleStar = useCallback(
+    async (_id, isFile) => {
+      try {
+        const endpoint = `/${isFile ? "file" : "directory"}/${_id}/star`;
+        const response = await axiosInstance.patch(endpoint);
+        const isStarred = response.data.isStarred;
+        showSuccessToast(
+          isStarred ? "Starred successfully" : "Unstarred successfully",
+        );
+        getAllFiles();
+      } catch (error) {
+        showErrorToast(error.response?.data?.error || error.message);
+      }
+    },
+    [getAllFiles],
+  );
 
-  const handleRestore = useCallback(async (_id, isFile) => {
-    try {
-      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/restore`;
-      await axiosInstance.patch(endpoint);
-      showSuccessToast("Restored successfully");
-      getAllFiles();
-    } catch (error) {
-      showErrorToast(error.response?.data?.error || error.message);
-    }
-  }, [getAllFiles]);
+  const handleTrash = useCallback(
+    async (_id, isFile) => {
+      try {
+        const endpoint = `/${isFile ? "file" : "directory"}/${_id}/trash`;
+        await axiosInstance.patch(endpoint);
+        showSuccessToast("Moved to Trash");
+        getAllFiles();
+      } catch (error) {
+        showErrorToast(error.response?.data?.error || error.message);
+      }
+    },
+    [getAllFiles],
+  );
 
-  const handleDeletePermanently = useCallback(async (_id, isFile) => {
-    if (!window.confirm("Are you sure you want to permanently delete this? This cannot be undone.")) return;
-    try {
-      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/permanent`;
-      await axiosInstance.delete(endpoint);
-      showSuccessToast("Permanently deleted");
-      getAllFiles();
-    } catch (error) {
-      showErrorToast(error.response?.data?.error || error.message);
-    }
-  }, [getAllFiles]);
+  const handleRestore = useCallback(
+    async (_id, isFile) => {
+      try {
+        const endpoint = `/${isFile ? "file" : "directory"}/${_id}/restore`;
+        await axiosInstance.patch(endpoint);
+        showSuccessToast("Restored successfully");
+        getAllFiles();
+      } catch (error) {
+        showErrorToast(error.response?.data?.error || error.message);
+      }
+    },
+    [getAllFiles],
+  );
+
+  const handleDeletePermanently = useCallback(
+    async (_id, isFile) => {
+      if (
+        !window.confirm(
+          "Are you sure you want to permanently delete this? This cannot be undone.",
+        )
+      )
+        return;
+      try {
+        const endpoint = `/${isFile ? "file" : "directory"}/${_id}/permanent`;
+        await axiosInstance.delete(endpoint);
+        showSuccessToast("Permanently deleted");
+        getAllFiles();
+      } catch (error) {
+        showErrorToast(error.response?.data?.error || error.message);
+      }
+    },
+    [getAllFiles],
+  );
 
   const handleEmptyTrash = async () => {
-    if (!window.confirm("Empty the trash bin? All items in the trash will be permanently deleted!")) return;
+    if (
+      !window.confirm(
+        "Empty the trash bin? All items in the trash will be permanently deleted!",
+      )
+    )
+      return;
     try {
       await dispatch(emptyTrashBin()).unwrap();
       showSuccessToast("Trash bin emptied");
@@ -147,43 +185,55 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
     return `${isFile ? `${BASE_URL}file` : "/directory"}/${_id}`;
   };
 
-  const handleOpenFile = useCallback((item) => {
-    if (isTrashMode) {
-      showErrorToast("Restore this file to preview it.");
-      return;
-    }
-    window.open(getUrl(item._id, true) + "?action=open");
-  }, [isTrashMode]);
-
-  const handleOpenFolder = useCallback((_id) => {
-    if (isTrashMode) {
-      showErrorToast("Restore this folder to access its contents.");
-    } else {
-      navigate(getUrl(_id, false));
-    }
-  }, [isTrashMode, navigate]);
-
-  const handleDownloadFile = useCallback((item) => {
-    if (isTrashMode) {
-      showErrorToast("Restore this file to download it.");
-      return;
-    }
-    window.location.href = getUrl(item._id, true) + "?action=download";
-  }, [isTrashMode]);
-
-  const handleMakeOffline = useCallback(async (item) => {
-    try {
-      const result = await dispatch(makeGDriveOffline(item._id));
-      if (!result.error) {
-        showSuccessToast(result.payload.message);
-        getAllFiles();
-      } else {
-        showErrorToast(result.payload || "Failed to make file offline");
+  const handleOpenFile = useCallback(
+    (item) => {
+      if (isTrashMode) {
+        showErrorToast("Restore this file to preview it.");
+        return;
       }
-    } catch (error) {
-      showErrorToast(error.message);
-    }
-  }, []);
+      window.open(getUrl(item._id, true) + "?action=open");
+    },
+    [isTrashMode],
+  );
+
+  const handleOpenFolder = useCallback(
+    (_id) => {
+      if (isTrashMode) {
+        showErrorToast("Restore this folder to access its contents.");
+      } else {
+        navigate(getUrl(_id, false));
+      }
+    },
+    [isTrashMode, navigate],
+  );
+
+  const handleDownloadFile = useCallback(
+    (item) => {
+      if (isTrashMode) {
+        showErrorToast("Restore this file to download it.");
+        return;
+      }
+      window.location.href = getUrl(item._id, true) + "?action=download";
+    },
+    [isTrashMode],
+  );
+
+  const handleMakeOffline = useCallback(
+    async (item) => {
+      try {
+        const result = await dispatch(makeGDriveOffline(item._id));
+        if (!result.error) {
+          showSuccessToast(result.payload.message);
+          getAllFiles();
+        } else {
+          showErrorToast(result.payload || "Failed to make file offline");
+        }
+      } catch (error) {
+        showErrorToast(error.message);
+      }
+    },
+    [dispatch, getAllFiles],
+  );
 
   const handleOpenInDrive = useCallback((item) => {
     if (item.webViewLink) {
@@ -288,6 +338,7 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
       isTrashMode,
       onRestore: () => handleRestore(item?._id, true),
       onDeletePermanently: () => handleDeletePermanently(item?._id, true),
+      onToggleStar: () => handleToggleStar(item?._id, true),
     }),
     [
       handleOpenFile,
@@ -300,6 +351,7 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
       isTrashMode,
       handleRestore,
       handleDeletePermanently,
+      handleToggleStar,
     ],
   );
 
@@ -349,7 +401,7 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                 >
                   Empty Trash
                 </button>
-              ) : !isSharedMode ? (
+              ) : !isSharedMode && !isStarredMode ? (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCreateFolder(true)}
@@ -466,8 +518,13 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                               })
                             }
                             onRestore={() => handleRestore(item._id, false)}
-                            onDeletePermanently={() => handleDeletePermanently(item._id, false)}
+                            onDeletePermanently={() =>
+                              handleDeletePermanently(item._id, false)
+                            }
                             isTrashMode={isTrashMode}
+                            onToggleStar={() =>
+                              handleToggleStar(item?._id, false)
+                            }
                           />
                         ))}
                         {fileList?.map((item) => (
@@ -502,8 +559,11 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                           })
                         }
                         onRestore={() => handleRestore(item._id, false)}
-                        onDeletePermanently={() => handleDeletePermanently(item._id, false)}
+                        onDeletePermanently={() =>
+                          handleDeletePermanently(item._id, false)
+                        }
                         isTrashMode={isTrashMode}
+                        onToggleStar={() => handleToggleStar(item?._id, false)}
                       />
                     ))}
                     {fileList?.map((item) => (
@@ -536,9 +596,20 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                             </svg>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                                {item?.name}
-                              </p>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                                  {item?.name}
+                                </p>
+                                {item?.isStarred && (
+                                  <svg
+                                    className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400 dark:text-gray-500">
                                 {item?.googleId ? "Drive folder" : "Folder"}
                               </p>
@@ -565,7 +636,12 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                               }
                               isTrashMode={isTrashMode}
                               onRestore={() => handleRestore(item._id, false)}
-                              onDeletePermanently={() => handleDeletePermanently(item._id, false)}
+                              onDeletePermanently={() =>
+                                handleDeletePermanently(item._id, false)
+                              }
+                              onToggleStar={() =>
+                                handleToggleStar(item?._id, false)
+                              }
                             />
                           </div>
                         </div>
@@ -583,9 +659,20 @@ function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
                           >
                             <FileThumbnail item={item} size="sm" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
-                                {item?.name}
-                              </p>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                                  {item?.name}
+                                </p>
+                                {item?.isStarred && (
+                                  <svg
+                                    className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400 dark:text-gray-500">
                                 {item?.googleId ? "Drive" : "File"}
                               </p>

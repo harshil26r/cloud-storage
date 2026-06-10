@@ -16,9 +16,9 @@ export default function FileItem({
   isTrashMode,
   onRestore,
   onDeletePermanently,
+  onToggleStar,
 }) {
   const [showActions, setShowActions] = useState(false);
-  const modifiedDate = item?.modifiedAt || item?.modified;
   const isGoogleFile = !!item?.googleId;
 
   const initialState = isGoogleFile
@@ -38,9 +38,16 @@ export default function FileItem({
           <FileThumbnail item={item} size="lg" />
         </div>
         <div className="px-3 py-2.5 flex items-center justify-between gap-1">
-          <p className="text-sm text-gray-800 truncate flex-1 min-w-0 dark:text-gray-200">
-            {item?.name}
-          </p>
+          <div className="flex-1 min-w-0 flex items-center gap-1.5">
+            <p className="text-sm text-gray-800 truncate dark:text-gray-200">
+              {item?.name}
+            </p>
+            {item?.isStarred && (
+              <svg className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            )}
+          </div>
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             <ActionMenu
               isOpen={showActions}
@@ -56,6 +63,8 @@ export default function FileItem({
               isTrashMode={isTrashMode}
               onRestore={onRestore}
               onDeletePermanently={onDeletePermanently}
+              isFile={true}
+              onToggleStar={onToggleStar}
             />
           </div>
         </div>
@@ -74,9 +83,16 @@ export default function FileItem({
         <div className="flex items-center gap-3">
           <FileThumbnail item={item} size="sm" />
           <div className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-              {item?.name}
-            </span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item?.name}
+              </span>
+              {item?.isStarred && (
+                <svg className="h-3.5 w-3.5 shrink-0 text-amber-500 fill-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              )}
+            </div>
             {isGoogleFile && (
               <FileStatusIndicator
                 fileId={item._id}
@@ -119,6 +135,8 @@ export default function FileItem({
             isTrashMode={isTrashMode}
             onRestore={onRestore}
             onDeletePermanently={onDeletePermanently}
+            isFile={true}
+            onToggleStar={onToggleStar}
           />
         </div>
       </td>
