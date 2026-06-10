@@ -47,6 +47,7 @@ const fileSchema = new Schema(
     },
     isTrashed: { type: Boolean, default: false, index: true },
     trashedAt: { type: Date, default: null },
+    isStarred: { type: Boolean, default: false, index: true },
   },
   {
     timestamps: true,

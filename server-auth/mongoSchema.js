@@ -57,6 +57,9 @@ try {
           parentDirId: {
             bsonType: 'objectId',
           },
+          isStarred: {
+            bsonType: 'bool',
+          },
         },
         additionalProperties: false,
       },
@@ -83,6 +86,9 @@ try {
           },
           userId: {
             bsonType: 'objectId',
+          },
+          isStarred: {
+            bsonType: 'bool',
           },
         },
       },

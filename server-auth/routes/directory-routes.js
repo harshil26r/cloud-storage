@@ -12,12 +12,15 @@ import {
   deleteDirectoryPermanent,
   getTrashBin,
   emptyTrash,
+  toggleStarDirectory,
+  getStarredItems,
 } from '../controllers/directoryController.js';
 
 const dirRouter = Router();
 
 dirRouter.get('/shared-with-me', getSharedWithMe);
 dirRouter.get('/trash-bin', getTrashBin);
+dirRouter.get('/starred', getStarredItems);
 
 dirRouter.get('/', getDirectory);
 dirRouter.get('/:id', getDirectory);
@@ -33,5 +36,6 @@ dirRouter.post('/trash/empty', emptyTrash);
 dirRouter.patch('/:id/trash', trashDirectory);
 dirRouter.patch('/:id/restore', restoreDirectory);
 dirRouter.delete('/:id/permanent', deleteDirectoryPermanent);
+dirRouter.patch('/:id/star', toggleStarDirectory);
 
 export default dirRouter;

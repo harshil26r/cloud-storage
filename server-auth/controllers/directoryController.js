@@ -84,7 +84,9 @@ export const createDirectoryCtr = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(parentDirId, 'directory');
     if (isTrashed) {
-      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
+      return res.status(403).json({
+        error: 'Cannot modify or create items in a trashed directory.',
+      });
     }
 
     const createdDir = await Directory.create({
@@ -128,7 +130,9 @@ export const renameDirectory = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(_id, 'directory');
     if (isTrashed) {
-      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
+      return res.status(403).json({
+        error: 'Cannot modify or create items in a trashed directory.',
+      });
     }
 
     const allowed = await hasAccess(
@@ -223,7 +227,9 @@ export const updateShareSettings = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(req.params.id, 'directory');
     if (isTrashed) {
-      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
+      return res.status(403).json({
+        error: 'Cannot modify or create items in a trashed directory.',
+      });
     }
 
     // Validate modification access
@@ -303,7 +309,8 @@ export const trashDirectory = async (req, res) => {
       dir.userId.toString() === req.user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this folder.',
       });
     }
 
@@ -350,7 +357,8 @@ export const restoreDirectory = async (req, res) => {
       dir.userId.toString() === req.user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this folder.',
       });
     }
 
@@ -393,12 +401,11 @@ export const deleteDirectoryPermanent = async (req, res) => {
     if (!dir) return res.status(404).json({ error: 'Directory not found' });
 
     const isOwner =
-      dir.userId &&
-      user?._id &&
-      dir.userId.toString() === user._id.toString();
+      dir.userId && user?._id && dir.userId.toString() === user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this folder.',
       });
     }
 
@@ -488,6 +495,66 @@ export const emptyTrash = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Trash bin emptied' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const toggleStarDirectory = async (req, res) => {
+  try {
+    const { user } = req;
+    const _id = req.params.id;
+
+    if (!_id) {
+      return res.status(400).json({ error: 'Directory ID is required' });
+    }
+
+    const directoryData = await Directory.findById(_id);
+
+    if (!directoryData) {
+      return res.status(404).json({ error: 'Directory not found' });
+    }
+
+    const allowed = await hasAccess(
+      user?._id,
+      directoryData,
+      'directory',
+      'viewer',
+    );
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
+    }
+
+    const isStarred = !directoryData.isStarred;
+    directoryData.isStarred = isStarred;
+    await directoryData.save();
+
+    res.status(200).json({
+      message: `Directory ${isStarred ? 'starred' : 'unstarred'} successfully`,
+      isStarred,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getStarredItems = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const directories = await Directory.find({
+      isStarred: true,
+      isTrashed: { $ne: true },
+      $or: [{ userId: userId }, { 'sharedWith.userId': userId }],
+    }).lean();
+
+    const files = await File.find({
+      isStarred: true,
+      isTrashed: { $ne: true },
+      $or: [{ userId: userId }, { 'sharedWith.userId': userId }],
+    }).lean();
+
+    res.status(200).json({ directories, files });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -34,7 +34,9 @@ export const serveFile = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(_id, 'file');
     if (isTrashed) {
-      return res.status(403).json({ error: 'This file is in the Trash and cannot be accessed.' });
+      return res
+        .status(403)
+        .json({ error: 'This file is in the Trash and cannot be accessed.' });
     }
 
     const isGoogleOnline =
@@ -93,7 +95,9 @@ export const uploadFile = async (req, res) => {
     const isTrashed = await isTrashedRecursive(parentDirId, 'directory');
     if (isTrashed) {
       await deleteLocalFileIfExists({ _id, extension });
-      return res.status(403).json({ error: 'Cannot upload files to a trashed directory.' });
+      return res
+        .status(403)
+        .json({ error: 'Cannot upload files to a trashed directory.' });
     }
 
     const fileCollection = await File.create({
@@ -136,7 +140,9 @@ export const renameFile = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(_id, 'file');
     if (isTrashed) {
-      return res.status(403).json({ error: 'Cannot modify files that are in the Trash.' });
+      return res
+        .status(403)
+        .json({ error: 'Cannot modify files that are in the Trash.' });
     }
 
     const allowed = await hasAccess(user?._id, fileInfo, 'file', 'editor');
@@ -244,7 +250,9 @@ export const updateShareSettings = async (req, res) => {
 
     const isTrashed = await isTrashedRecursive(req.params.id, 'file');
     if (isTrashed) {
-      return res.status(403).json({ error: 'Cannot modify files that are in the Trash.' });
+      return res
+        .status(403)
+        .json({ error: 'Cannot modify files that are in the Trash.' });
     }
 
     // Validate modification access
@@ -298,7 +306,8 @@ export const trashFile = async (req, res) => {
       file.userId.toString() === req.user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this file.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this file.',
       });
     }
 
@@ -346,7 +355,8 @@ export const restoreFile = async (req, res) => {
       file.userId.toString() === req.user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this file.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this file.',
       });
     }
 
@@ -393,7 +403,8 @@ export const deleteFilePermanent = async (req, res) => {
       file.userId.toString() === req.user._id.toString();
     if (!isOwner) {
       return res.status(403).json({
-        error: 'Only the owner can trash, restore, or permanently delete this file.',
+        error:
+          'Only the owner can trash, restore, or permanently delete this file.',
       });
     }
 
@@ -416,6 +427,40 @@ export const deleteFilePermanent = async (req, res) => {
 
     await File.deleteOne({ _id: file._id });
     res.status(200).json({ message: 'File permanently deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const toggleStarFile = async (req, res) => {
+  try {
+    const { user } = req;
+    const _id = req.params.id;
+
+    if (!_id) {
+      return res.status(400).json({ error: 'File ID is required' });
+    }
+
+    const fileInfo = await File.findById(_id);
+    console.log(fileInfo, _id);
+
+    if (!fileInfo) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const allowed = await hasAccess(user?._id, fileInfo, 'file', 'viewer');
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
+    }
+
+    const isStarred = !fileInfo.isStarred;
+    fileInfo.isStarred = isStarred;
+    await fileInfo.save();
+
+    res.status(200).json({
+      message: `File ${isStarred ? 'starred' : 'unstarred'} successfully`,
+      isStarred,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

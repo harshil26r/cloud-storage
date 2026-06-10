@@ -10,6 +10,7 @@ import {
   trashFile,
   restoreFile,
   deleteFilePermanent,
+  toggleStarFile,
 } from '../controllers/fileController.js';
 import { getThumbnail } from '../controllers/thumbnailController.js';
 
@@ -28,5 +29,6 @@ fileRouter.route('/:id/share').get(getShareSettings).post(updateShareSettings);
 fileRouter.patch('/:id/trash', trashFile);
 fileRouter.patch('/:id/restore', restoreFile);
 fileRouter.delete('/:id/permanent', deleteFilePermanent);
+fileRouter.patch('/:id/star', toggleStarFile);
 
 export default fileRouter;
