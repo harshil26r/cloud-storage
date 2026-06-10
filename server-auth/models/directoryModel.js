@@ -36,6 +36,8 @@ const directorySchema = new Schema(
     settings: {
       allowEditorShare: { type: Boolean, default: true },
     },
+    isTrashed: { type: Boolean, default: false, index: true },
+    trashedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

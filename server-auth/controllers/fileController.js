@@ -7,8 +7,11 @@ import {
   deleteLocalFileIfExists,
   hasLocalCopy,
   syncGDrivePermissions,
+  deleteGoogleDriveItemById,
 } from '../services/googleDriveService.js';
 import { hasAccess } from '../middleware/checkAccess.js';
+import { createDriveClient, ensureValidToken } from '../services/googleAuth.js';
+import { isTrashedRecursive } from '../utils/trashHelper.js';
 
 export const serveFile = async (req, res) => {
   try {
@@ -27,6 +30,11 @@ export const serveFile = async (req, res) => {
     const allowed = await hasAccess(user?._id, fileInfo, 'file', 'viewer');
     if (!allowed) {
       return res.status(403).json({ error: 'Access Denied' });
+    }
+
+    const isTrashed = await isTrashedRecursive(_id, 'file');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'This file is in the Trash and cannot be accessed.' });
     }
 
     const isGoogleOnline =
@@ -82,6 +90,12 @@ export const uploadFile = async (req, res) => {
   const { user } = req;
 
   try {
+    const isTrashed = await isTrashedRecursive(parentDirId, 'directory');
+    if (isTrashed) {
+      await deleteLocalFileIfExists({ _id, extension });
+      return res.status(403).json({ error: 'Cannot upload files to a trashed directory.' });
+    }
+
     const fileCollection = await File.create({
       _id,
       extension,
@@ -118,6 +132,11 @@ export const renameFile = async (req, res) => {
 
     if (!fileInfo) {
       return res.status(404).json({ error: 'File not found' });
+    }
+
+    const isTrashed = await isTrashedRecursive(_id, 'file');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'Cannot modify files that are in the Trash.' });
     }
 
     const allowed = await hasAccess(user?._id, fileInfo, 'file', 'editor');
@@ -223,6 +242,11 @@ export const updateShareSettings = async (req, res) => {
     const file = await File.findById(req.params.id);
     if (!file) return res.status(404).json({ error: 'File not found' });
 
+    const isTrashed = await isTrashedRecursive(req.params.id, 'file');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'Cannot modify files that are in the Trash.' });
+    }
+
     // Validate modification access
     const isOwner =
       file.userId &&
@@ -258,6 +282,140 @@ export const updateShareSettings = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Share settings updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const trashFile = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    const isOwner =
+      file.userId &&
+      req.user?._id &&
+      file.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this file.',
+      });
+    }
+
+    const allowed = await hasAccess(req.user?._id, file, 'file', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    file.isTrashed = true;
+    file.trashedAt = new Date();
+    await file.save();
+
+    if (file.googleId) {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        // Sync with Google Drive trash setting
+        const { accessToken: validToken } = await ensureValidToken(
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+        );
+        const drive = createDriveClient(
+          validToken,
+          userData.googleRefreshToken,
+        );
+        await drive.files.update({
+          fileId: file.googleId,
+          resource: { trashed: true },
+        });
+      }
+    }
+
+    res.status(200).json({ message: 'File moved to Trash' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const restoreFile = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    const isOwner =
+      file.userId &&
+      req.user?._id &&
+      file.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this file.',
+      });
+    }
+
+    const allowed = await hasAccess(req.user?._id, file, 'file', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    file.isTrashed = false;
+    file.trashedAt = null;
+    await file.save();
+
+    if (file.googleId) {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        const { accessToken: validToken } = await ensureValidToken(
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+        );
+        const drive = createDriveClient(
+          validToken,
+          userData.googleRefreshToken,
+        );
+        await drive.files.update({
+          fileId: file.googleId,
+          resource: { trashed: false },
+        });
+      }
+    }
+
+    res.status(200).json({ message: 'File restored from Trash' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteFilePermanent = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    const isOwner =
+      file.userId &&
+      req.user?._id &&
+      file.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this file.',
+      });
+    }
+
+    const allowed = await hasAccess(req.user?._id, file, 'file', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    if (file.googleId) {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        await deleteGoogleDriveItemById(
+          file.googleId,
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+        );
+      }
+    }
+
+    await deleteLocalFileIfExists(file);
+
+    await File.deleteOne({ _id: file._id });
+    res.status(200).json({ message: 'File permanently deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

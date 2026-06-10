@@ -3,9 +3,13 @@ import { File } from '../models/fileModel.js';
 import {
   deleteDirectoryTree,
   syncGDrivePermissions,
+  deleteLocalFileIfExists,
+  deleteGoogleDriveItemById,
 } from '../services/googleDriveService.js';
 import { User } from '../models/userModel.js';
 import { hasAccess } from '../middleware/checkAccess.js';
+import { createDriveClient, ensureValidToken } from '../services/googleAuth.js';
+import { isTrashedRecursive } from '../utils/trashHelper.js';
 
 export const getDirectory = async (req, res) => {
   try {
@@ -35,8 +39,21 @@ export const getDirectory = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied' });
     }
 
-    const files = await File.find({ parentDirId: _id }).lean();
-    const directories = await Directory.find({ parentDirId: _id }).lean();
+    const isTrashed = await isTrashedRecursive(_id, 'directory');
+    if (isTrashed) {
+      return res.status(403).json({
+        error: 'This directory is in the Trash and cannot be accessed.',
+      });
+    }
+
+    const files = await File.find({
+      parentDirId: _id,
+      isTrashed: { $ne: true },
+    }).lean();
+    const directories = await Directory.find({
+      parentDirId: _id,
+      isTrashed: { $ne: true },
+    }).lean();
 
     res.status(200).json({ ...directoryData, files, directories });
   } catch (err) {
@@ -48,7 +65,7 @@ export const createDirectoryCtr = async (req, res) => {
   try {
     const { user } = req;
 
-    const parentDirId = req.params.parentDirId;
+    const parentDirId = req.params.parentDirId || user.rootDirId;
     const dirName = req.body.dirName?.trim();
 
     if (!parentDirId) {
@@ -63,6 +80,11 @@ export const createDirectoryCtr = async (req, res) => {
 
     if (!parentDir) {
       return res.status(404).json({ error: 'Parent directory not found' });
+    }
+
+    const isTrashed = await isTrashedRecursive(parentDirId, 'directory');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
     }
 
     const createdDir = await Directory.create({
@@ -102,6 +124,11 @@ export const renameDirectory = async (req, res) => {
       return res
         .status(404)
         .json({ error: 'Directory not found for this user!' });
+    }
+
+    const isTrashed = await isTrashedRecursive(_id, 'directory');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
     }
 
     const allowed = await hasAccess(
@@ -194,6 +221,11 @@ export const updateShareSettings = async (req, res) => {
     const dir = await Directory.findById(req.params.id);
     if (!dir) return res.status(404).json({ error: 'Directory not found' });
 
+    const isTrashed = await isTrashedRecursive(req.params.id, 'directory');
+    if (isTrashed) {
+      return res.status(403).json({ error: 'Cannot modify or create items in a trashed directory.' });
+    }
+
     // Validate modification access
     const isOwner =
       dir.userId &&
@@ -255,6 +287,207 @@ export const getSharedWithMe = async (req, res) => {
     }).lean();
 
     res.status(200).json({ directories, files });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const trashDirectory = async (req, res) => {
+  try {
+    const dir = await Directory.findById(req.params.id);
+    if (!dir) return res.status(404).json({ error: 'Directory not found' });
+
+    const isOwner =
+      dir.userId &&
+      req.user?._id &&
+      dir.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+      });
+    }
+
+    const allowed = await hasAccess(req.user?._id, dir, 'directory', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    dir.isTrashed = true;
+    dir.trashedAt = new Date();
+    await dir.save();
+
+    if (dir.googleId && dir.googleId !== 'root') {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        const { accessToken: validToken } = await ensureValidToken(
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+        );
+        const drive = createDriveClient(
+          validToken,
+          userData.googleRefreshToken,
+        );
+        await drive.files.update({
+          fileId: dir.googleId,
+          resource: { trashed: true },
+        });
+      }
+    }
+
+    res.status(200).json({ message: 'Folder moved to Trash' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const restoreDirectory = async (req, res) => {
+  try {
+    const dir = await Directory.findById(req.params.id);
+    if (!dir) return res.status(404).json({ error: 'Directory not found' });
+
+    const isOwner =
+      dir.userId &&
+      req.user?._id &&
+      dir.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+      });
+    }
+
+    const allowed = await hasAccess(req.user?._id, dir, 'directory', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    dir.isTrashed = false;
+    dir.trashedAt = null;
+    await dir.save();
+
+    if (dir.googleId && dir.googleId !== 'root') {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        const { accessToken: validToken } = await ensureValidToken(
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+        );
+        const drive = createDriveClient(
+          validToken,
+          userData.googleRefreshToken,
+        );
+        await drive.files.update({
+          fileId: dir.googleId,
+          resource: { trashed: false },
+        });
+      }
+    }
+
+    res.status(200).json({ message: 'Folder restored from Trash' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteDirectoryPermanent = async (req, res) => {
+  try {
+    const { user } = req;
+    const dir = await Directory.findById(req.params.id);
+    if (!dir) return res.status(404).json({ error: 'Directory not found' });
+
+    const isOwner =
+      dir.userId &&
+      user?._id &&
+      dir.userId.toString() === user._id.toString();
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Only the owner can trash, restore, or permanently delete this folder.',
+      });
+    }
+
+    const allowed = await hasAccess(user?._id, dir, 'directory', 'editor');
+    if (!allowed) return res.status(403).json({ error: 'Access Denied' });
+
+    // Recursively deletes tree from disk and DB
+    const stats = await deleteDirectoryTree(dir._id, user._id);
+    res.status(200).json({ message: 'Folder permanently deleted', ...stats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getTrashBin = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Fetch all directly trashed items (isTrashed is true)
+    const trashedDirs = await Directory.find({
+      userId,
+      isTrashed: true,
+    }).lean();
+    const trashedFiles = await File.find({ userId, isTrashed: true }).lean();
+
+    // Google Drive logic to exclude child items from list (only show top level trashed items)
+    const topLevelDirs = [];
+    for (const dir of trashedDirs) {
+      const parentIsTrashed = await isTrashedRecursive(
+        dir.parentDirId,
+        'directory',
+      );
+      if (!parentIsTrashed) topLevelDirs.push(dir);
+    }
+
+    const topLevelFiles = [];
+    for (const file of trashedFiles) {
+      const parentIsTrashed = await isTrashedRecursive(
+        file.parentDirId,
+        'directory',
+      );
+      if (!parentIsTrashed) topLevelFiles.push(file);
+    }
+
+    res.status(200).json({ directories: topLevelDirs, files: topLevelFiles });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const emptyTrash = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Permanently delete directly trashed files
+    const trashedFiles = await File.find({ userId, isTrashed: true });
+    for (const file of trashedFiles) {
+      try {
+        if (file.googleId) {
+          const userData = await User.findById(userId).lean();
+          if (userData?.googleAccessToken) {
+            await deleteGoogleDriveItemById(
+              file.googleId,
+              userData.googleAccessToken,
+              userData.googleRefreshToken,
+              userId,
+            );
+          }
+        }
+        await deleteLocalFileIfExists(file);
+        await File.deleteOne({ _id: file._id });
+      } catch (err) {
+        console.error(`Failed to delete file ${file._id}:`, err);
+      }
+    }
+
+    // Permanently delete directly trashed directories
+    const trashedDirs = await Directory.find({ userId, isTrashed: true });
+    for (const dir of trashedDirs) {
+      try {
+        await deleteDirectoryTree(dir._id, userId);
+      } catch (err) {
+        if (err.message !== 'Directory not found') {
+          throw err;
+        }
+      }
+    }
+
+    res.status(200).json({ message: 'Trash bin emptied' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

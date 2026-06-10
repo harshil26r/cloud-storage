@@ -521,9 +521,7 @@ export const deleteDirectoryTree = async (targetDirId, userId) => {
     session.endSession();
   }
 
-  if (
-    userData?.googleDriveRootDirId?.toString() === targetDir._id.toString()
-  ) {
+  if (userData?.googleDriveRootDirId?.toString() === targetDir._id.toString()) {
     await User.findByIdAndUpdate(userId, {
       $unset: { googleDriveRootDirId: '' },
     });
@@ -591,9 +589,10 @@ export const downloadFileOffline = async (
                   ? Math.round((downloadedBytes / fileSize) * 100)
                   : 0;
 
-              File.updateOne({ _id: fileId }, { downloadProgress: progress }).catch(
-                (e) => console.error('Progress update error:', e),
-              );
+              File.updateOne(
+                { _id: fileId },
+                { downloadProgress: progress },
+              ).catch((e) => console.error('Progress update error:', e));
             })
             .on('end', () => {
               writeStream.close();

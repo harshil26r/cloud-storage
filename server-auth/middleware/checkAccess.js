@@ -64,11 +64,9 @@ export const checkAccessMiddleware = (requiredRole = 'viewer') => {
         ? await hasAccess(req.user._id, itemId, itemType, requiredRole)
         : false;
       if (!allowed) {
-        return res
-          .status(403)
-          .json({
-            error: 'You do not have permission to access this resource',
-          });
+        return res.status(403).json({
+          error: 'You do not have permission to access this resource',
+        });
       }
       next();
     } catch (err) {
