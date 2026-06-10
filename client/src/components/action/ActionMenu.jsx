@@ -10,6 +10,9 @@ export default function ActionMenu({
   onMakeOffline,
   onOpenInDrive,
   onShare,
+  isTrashMode,
+  onRestore,
+  onDeletePermanently,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isGoogleFile = isFile && item?.googleId;
@@ -30,6 +33,51 @@ export default function ActionMenu({
 
   const menuItemClass =
     "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors";
+
+  if (isTrashMode) {
+    return (
+      <div className="relative inline-block">
+        <button
+          onClick={toggleMenu}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          title="More options"
+        >
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+          </svg>
+        </button>
+
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div
+              className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => handleAction(onRestore)}
+                className={`${menuItemClass} text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30`}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Restore
+              </button>
+              <button
+                onClick={() => handleAction(onDeletePermanently)}
+                className={`${menuItemClass} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30`}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete permanently
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative inline-block">
