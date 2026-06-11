@@ -11,6 +11,7 @@ import {
   restoreFile,
   deleteFilePermanent,
   toggleStarFile,
+  getRecentFiles,
 } from '../controllers/fileController.js';
 import { getThumbnail } from '../controllers/thumbnailController.js';
 
@@ -18,6 +19,7 @@ const fileRouter = Router();
 
 fileRouter.get('/thumbnail/:id', getThumbnail);
 
+fileRouter.get('/recent', getRecentFiles);
 fileRouter.get('/:id', serveFile);
 
 fileRouter.post('/', fileUploadMiddleware, uploadFile);

@@ -39,6 +39,11 @@ export const serveFile = async (req, res) => {
         .json({ error: 'This file is in the Trash and cannot be accessed.' });
     }
 
+    // Update lastAccessedAt timestamp asynchronously
+    File.updateOne({ _id }, { $set: { lastAccessedAt: new Date() } }).catch(err => {
+      console.error('Failed to update lastAccessedAt:', err);
+    });
+
     const isGoogleOnline =
       fileInfo.googleId &&
       fileInfo.syncState !== 'offline' &&
@@ -150,7 +155,7 @@ export const renameFile = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied' });
     }
 
-    await File.updateOne({ _id }, { $set: { name: newName } });
+    await File.updateOne({ _id }, { $set: { name: newName, lastAccessedAt: new Date() } });
 
     res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
@@ -461,6 +466,28 @@ export const toggleStarFile = async (req, res) => {
       message: `File ${isStarred ? 'starred' : 'unstarred'} successfully`,
       isStarred,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getRecentFiles = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Fetch files belonging to or shared with the user, sorted by lastAccessedAt descending
+    const files = await File.find({
+      isTrashed: { $ne: true },
+      $or: [
+        { userId: userId },
+        { 'sharedWith.userId': userId }
+      ]
+    })
+      .sort({ lastAccessedAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.status(200).json({ files });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

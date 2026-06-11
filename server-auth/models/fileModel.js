@@ -48,6 +48,7 @@ const fileSchema = new Schema(
     isTrashed: { type: Boolean, default: false, index: true },
     trashedAt: { type: Date, default: null },
     isStarred: { type: Boolean, default: false, index: true },
+    lastAccessedAt: { type: Date, default: Date.now, index: true },
   },
   {
     timestamps: true,

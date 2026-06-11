@@ -60,6 +60,9 @@ try {
           isStarred: {
             bsonType: 'bool',
           },
+          lastAccessedAt: {
+            bsonType: 'date',
+          },
         },
         additionalProperties: false,
       },
