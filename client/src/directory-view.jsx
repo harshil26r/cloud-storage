@@ -21,6 +21,7 @@ import {
   fetchTrashBin,
   emptyTrashBin,
   fetchStarredItems,
+  fetchRecentFiles,
 } from "./store/directorySlice";
 import { renameFileAction } from "./store/fileSlice";
 import { makeGDriveOffline, uploadGDriveFile } from "./store/googleDriveSlice";
@@ -33,6 +34,7 @@ function DirectoryView({
   isSharedMode = false,
   isTrashMode = false,
   isStarredMode = false,
+  isRecentMode = false,
 }) {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
@@ -62,10 +64,12 @@ function DirectoryView({
       dispatch(fetchSharedWithMe());
     } else if (isStarredMode) {
       dispatch(fetchStarredItems());
+    } else if (isRecentMode) {
+      dispatch(fetchRecentFiles());
     } else {
       dispatch(fetchDirectories(directoryId || ""));
     }
-  }, [dispatch, directoryId, isSharedMode, isTrashMode, isStarredMode]);
+  }, [dispatch, directoryId, isSharedMode, isTrashMode, isStarredMode, isRecentMode]);
 
   const handleToggleStar = useCallback(
     async (_id, isFile) => {
@@ -401,7 +405,7 @@ function DirectoryView({
                 >
                   Empty Trash
                 </button>
-              ) : !isSharedMode && !isStarredMode ? (
+              ) : !isSharedMode && !isStarredMode && !isRecentMode ? (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCreateFolder(true)}

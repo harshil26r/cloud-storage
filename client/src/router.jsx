@@ -18,6 +18,10 @@ export const router = createBrowserRouter([
     element: <DirectoryView isStarredMode={true} />,
   },
   {
+    path: "/recent",
+    element: <DirectoryView isRecentMode={true} />,
+  },
+  {
     path: "/trash",
     element: <DirectoryView isTrashMode={true} />,
   },

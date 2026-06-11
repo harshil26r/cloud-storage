@@ -138,6 +138,18 @@ export const fetchStarredItems = createAsyncThunk(
   }
 );
 
+export const fetchRecentFiles = createAsyncThunk(
+  "directory/fetchRecentFiles",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/file/recent");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 const directorySlice = createSlice({
   name: "directory",
   initialState: {
@@ -203,6 +215,20 @@ const directorySlice = createSlice({
         state.currentDir = { name: "Starred", isStarredMode: true };
       })
       .addCase(fetchStarredItems.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchRecentFiles.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRecentFiles.fulfilled, (state, action) => {
+        state.loading = false;
+        state.directories = [];
+        state.files = action.payload.files || [];
+        state.currentDir = { name: "Recent", isRecentMode: true };
+      })
+      .addCase(fetchRecentFiles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
