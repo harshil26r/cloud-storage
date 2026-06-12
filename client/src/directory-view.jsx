@@ -26,6 +26,7 @@ import {
 import { renameFileAction } from "./store/fileSlice";
 import { makeGDriveOffline, uploadGDriveFile } from "./store/googleDriveSlice";
 import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
+import { fetchProfile } from "./store/userSlice";
 import axiosInstance from "./api/axiosInstance";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -70,7 +71,14 @@ function DirectoryView({
     } else {
       dispatch(fetchDirectories(directoryId || ""));
     }
-  }, [dispatch, directoryId, isSharedMode, isTrashMode, isStarredMode, isRecentMode]);
+  }, [
+    dispatch,
+    directoryId,
+    isSharedMode,
+    isTrashMode,
+    isStarredMode,
+    isRecentMode,
+  ]);
 
   const handleToggleStar = useCallback(
     async (_id, isFile) => {
@@ -96,11 +104,12 @@ function DirectoryView({
         await axiosInstance.patch(endpoint);
         showSuccessToast("Moved to Trash");
         getAllFiles();
+        dispatch(fetchProfile());
       } catch (error) {
         showErrorToast(error.response?.data?.error || error.message);
       }
     },
-    [getAllFiles],
+    [getAllFiles, dispatch],
   );
 
   const handleRestore = useCallback(
@@ -110,11 +119,12 @@ function DirectoryView({
         await axiosInstance.patch(endpoint);
         showSuccessToast("Restored successfully");
         getAllFiles();
+        dispatch(fetchProfile());
       } catch (error) {
         showErrorToast(error.response?.data?.error || error.message);
       }
     },
-    [getAllFiles],
+    [getAllFiles, dispatch],
   );
 
   const handleDeletePermanently = useCallback(
@@ -130,11 +140,12 @@ function DirectoryView({
         await axiosInstance.delete(endpoint);
         showSuccessToast("Permanently deleted");
         getAllFiles();
+        dispatch(fetchProfile());
       } catch (error) {
         showErrorToast(error.response?.data?.error || error.message);
       }
     },
-    [getAllFiles],
+    [getAllFiles, dispatch],
   );
 
   const handleEmptyTrash = async () => {
@@ -148,6 +159,7 @@ function DirectoryView({
       await dispatch(emptyTrashBin()).unwrap();
       showSuccessToast("Trash bin emptied");
       getAllFiles();
+      dispatch(fetchProfile());
     } catch (error) {
       showErrorToast(error || "Failed to empty trash");
     }
@@ -260,6 +272,7 @@ function DirectoryView({
         if (!result.error) {
           showSuccessToast(result.payload.message);
           getAllFiles();
+          dispatch(fetchProfile());
         } else {
           showErrorToast(result.payload || "Upload failed");
         }
@@ -282,6 +295,7 @@ function DirectoryView({
         if (xhr.status >= 200 && xhr.status < 300) {
           showSuccessToast(response.message);
           getAllFiles();
+          dispatch(fetchProfile());
         } else {
           showErrorToast(response.message || response.error);
         }
@@ -289,6 +303,7 @@ function DirectoryView({
         if (xhr.status >= 200 && xhr.status < 300) {
           showSuccessToast("File uploaded successfully!");
           getAllFiles();
+          dispatch(fetchProfile());
         } else {
           showErrorToast(`Failed to upload file : ${parseError}`);
         }
@@ -377,7 +392,10 @@ function DirectoryView({
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <Header
-        onSyncComplete={getAllFiles}
+        onSyncComplete={() => {
+          getAllFiles();
+          dispatch(fetchProfile());
+        }}
         onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
       />
 

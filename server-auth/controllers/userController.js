@@ -4,6 +4,7 @@ import { Directory } from '../models/directoryModel.js';
 import { Session } from '../models/sessionModel.js';
 import mongoose, { Types } from 'mongoose';
 import { buffer } from 'node:stream/consumers';
+import { getStorageUsed, STORAGE_LIMIT } from '../utils/storageHelper.js';
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -94,15 +95,27 @@ export const logoutAll = async (req, res) => {
 };
 
 export const getUserDetails = async (req, res) => {
-  const user = await User.findById(req.user._id).lean();
+  try {
+    const user = await User.findById(req.user._id).lean();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  res.status(200).json({
-    email: user.email,
-    username: user.username,
-    picture: user.picture,
-    googleDriveConnected: !!user.googleAccessToken,
-    googleDriveRootDirId: user.googleDriveRootDirId,
-  });
+    const storageUsed = await getStorageUsed(user._id);
+    const storageTotal = STORAGE_LIMIT;
+
+    res.status(200).json({
+      email: user.email,
+      username: user.username,
+      picture: user.picture,
+      googleDriveConnected: !!user.googleAccessToken,
+      googleDriveRootDirId: user.googleDriveRootDirId,
+      storageUsed,
+      storageTotal,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 export const searchUsers = async (req, res) => {

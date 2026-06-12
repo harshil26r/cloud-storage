@@ -10,11 +10,15 @@ import refreshTokenMiddleware from './middleware/refreshToken.js';
 import { connectDB } from './middleware/mongoConnect.js';
 import userRoutes from './routes/user-routes.js';
 import { startTrashCleaner } from './services/trashCleaner.js';
+import { migrateMissingFileSizes } from './utils/migration.js';
 
 const port = 4000;
 const app = express();
 
 const db = await connectDB();
+
+// Run migrations
+await migrateMissingFileSizes();
 
 // Run cleanup scheduler
 startTrashCleaner();

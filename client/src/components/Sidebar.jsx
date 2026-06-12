@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router";
+import { useSelector } from "react-redux";
 
 const navItems = [
   {
@@ -80,8 +81,19 @@ const navItems = [
 export default function Sidebar({ currentDir, isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const storageUsed = 0;
-  const storageTotal = 15;
+  const user = useSelector((state) => state.user.user);
+  const storageUsed = user?.storageUsed || 0;
+  const storageTotal = user?.storageTotal || 500 * 1024 * 1024;
+
+  const getUsedText = (usedBytes) => {
+    if (usedBytes < 1024 * 1024) {
+      return `${usedBytes.toLocaleString()} Bytes`;
+    }
+    return `${(usedBytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const storageUsedText = getUsedText(storageUsed);
+  const storageTotalMB = (storageTotal / (1024 * 1024)).toFixed(0);
   const storagePercent = Math.min((storageUsed / storageTotal) * 100, 100);
 
   return (
@@ -120,10 +132,14 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
               {navItems.map((item) => {
                 const isActive =
                   item.path === "/"
-                    ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
+                    ? !currentDir?.googleId &&
+                      !currentDir?.isVirtualSharedRoot &&
+                      (location.pathname === "/" ||
+                        location.pathname.includes("/directory/"))
                     : item.path === "/shared"
-                    ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
-                    : location.pathname === item.path;
+                      ? location.pathname === "/shared" ||
+                        !!currentDir?.isVirtualSharedRoot
+                      : location.pathname === item.path;
                 return (
                   <button
                     key={item.path}
@@ -145,8 +161,10 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
             </div>
             <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
-                <span>{storageUsed} GB of {storageTotal} GB used</span>
-                <span>{storagePercent.toFixed(0)}%</span>
+                <span>
+                  {storageUsedText} of {storageTotalMB} MB used
+                </span>
+                <span>{storagePercent.toFixed(1)}%</span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
                 <div
@@ -165,10 +183,14 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
           {navItems.map((item) => {
             const isActive =
               item.path === "/"
-                ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
+                ? !currentDir?.googleId &&
+                  !currentDir?.isVirtualSharedRoot &&
+                  (location.pathname === "/" ||
+                    location.pathname.includes("/directory/"))
                 : item.path === "/shared"
-                ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
-                : location.pathname === item.path;
+                  ? location.pathname === "/shared" ||
+                    !!currentDir?.isVirtualSharedRoot
+                  : location.pathname === item.path;
             return (
               <button
                 key={item.path}
@@ -188,8 +210,10 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
 
         <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
-            <span>{storageUsed} GB of {storageTotal} GB used</span>
-            <span>{storagePercent.toFixed(0)}%</span>
+            <span>
+              {storageUsedText} of {storageTotalMB} MB used
+            </span>
+            <span>{storagePercent.toFixed(1)}%</span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
             <div

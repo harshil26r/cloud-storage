@@ -7,8 +7,14 @@ import {
   uploadToGoogleDrive,
   initializeGoogleDriveStorage,
   verifyFileOwnership,
+  deleteLocalFileIfExists,
 } from '../services/googleDriveService.js';
 import { User } from '../models/userModel.js';
+import {
+  getStorageUsed,
+  isStorageExceeded,
+  isStorageFull,
+} from '../utils/storageHelper.js';
 
 const getUserTokens = async (userId) => {
   const userData = await User.findById(userId).lean();
@@ -111,6 +117,14 @@ export const makeFileOffline = async (req, res) => {
       });
     }
 
+    // Check storage limit
+    const fileSize = file.size || 0;
+    if (await isStorageExceeded(user._id, fileSize)) {
+      return res.status(400).json({
+        error: 'Storage limit exceeded. Maximum limit is 500 MB.',
+      });
+    }
+
     downloadFileOffline(
       fileId,
       file.googleId,
@@ -146,6 +160,13 @@ export const streamGoogleFile = async (req, res) => {
 
     if (!file.googleId) {
       return res.status(400).json({ error: 'File is not from Google Drive' });
+    }
+
+    // Check storage limit
+    if (await isStorageFull(user?._id)) {
+      return res
+        .status(403)
+        .json({ error: 'Storage full. Downloads and uploads are restricted.' });
     }
 
     if (file.syncState === 'offline') {
@@ -230,7 +251,23 @@ export const uploadGoogleDriveFile = async (req, res) => {
 
     const userData = await getUserTokens(user._id);
     if (!userData) {
+      // Clean up temp file
+      await deleteLocalFileIfExists({
+        _id: req.file._id,
+        extension: req.file.extension,
+      });
       return res.status(400).json({ error: 'Google Drive not connected' });
+    }
+
+    // Check storage limit
+    if (await isStorageExceeded(user._id, req.file.size || 0)) {
+      await deleteLocalFileIfExists({
+        _id: req.file._id,
+        extension: req.file.extension,
+      });
+      return res.status(400).json({
+        error: 'Storage limit exceeded. Maximum limit is 500 MB.',
+      });
     }
 
     const filePath = `${process.cwd()}/storage/${req.file._id}${req.file.extension}`;

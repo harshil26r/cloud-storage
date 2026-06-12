@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { File } from '../models/fileModel.js';
 import { Directory } from '../models/directoryModel.js';
 import { User } from '../models/userModel.js';
@@ -12,6 +13,11 @@ import {
 import { hasAccess } from '../middleware/checkAccess.js';
 import { createDriveClient, ensureValidToken } from '../services/googleAuth.js';
 import { isTrashedRecursive } from '../utils/trashHelper.js';
+import {
+  getStorageUsed,
+  isStorageExceeded,
+  isStorageFull,
+} from '../utils/storageHelper.js';
 
 export const serveFile = async (req, res) => {
   try {
@@ -39,10 +45,19 @@ export const serveFile = async (req, res) => {
         .json({ error: 'This file is in the Trash and cannot be accessed.' });
     }
 
+    // Check storage limit
+    if (await isStorageFull(user?._id)) {
+      return res
+        .status(403)
+        .json({ error: 'Storage full. Downloads and uploads are restricted.' });
+    }
+
     // Update lastAccessedAt timestamp asynchronously
-    File.updateOne({ _id }, { $set: { lastAccessedAt: new Date() } }).catch(err => {
-      console.error('Failed to update lastAccessedAt:', err);
-    });
+    File.updateOne({ _id }, { $set: { lastAccessedAt: new Date() } }).catch(
+      (err) => {
+        console.error('Failed to update lastAccessedAt:', err);
+      },
+    );
 
     const isGoogleOnline =
       fileInfo.googleId &&
@@ -93,7 +108,7 @@ export const serveFile = async (req, res) => {
 
 export const uploadFile = async (req, res) => {
   const parentDirId = req.body.parentDirId;
-  const { _id, extension, originalname } = req.file;
+  const { _id, extension, originalname, size, mimetype } = req.file;
   const { user } = req;
 
   try {
@@ -105,15 +120,25 @@ export const uploadFile = async (req, res) => {
         .json({ error: 'Cannot upload files to a trashed directory.' });
     }
 
+    // Check storage limit (500 MB)
+    if (await isStorageExceeded(user?._id, size || 0)) {
+      await deleteLocalFileIfExists({ _id, extension });
+      return res
+        .status(400)
+        .json({ error: 'Storage limit exceeded. Maximum limit is 500 MB.' });
+    }
+
     const fileCollection = await File.create({
       _id,
       extension,
       name: originalname,
       parentDirId,
       userId: user?._id,
+      size: size || 0,
+      mimeType: mimetype || 'application/octet-stream',
     });
 
-    fileCollection.save();
+    await fileCollection.save();
 
     res.status(201).json({ message: 'File uploaded successfully', _id });
   } catch (dbErr) {
@@ -155,7 +180,10 @@ export const renameFile = async (req, res) => {
       return res.status(403).json({ error: 'Access Denied' });
     }
 
-    await File.updateOne({ _id }, { $set: { name: newName, lastAccessedAt: new Date() } });
+    await File.updateOne(
+      { _id },
+      { $set: { name: newName, lastAccessedAt: new Date() } },
+    );
 
     res.status(200).json({ message: 'File renamed successfully' });
   } catch (err) {
@@ -478,10 +506,7 @@ export const getRecentFiles = async (req, res) => {
     // Fetch files belonging to or shared with the user, sorted by lastAccessedAt descending
     const files = await File.find({
       isTrashed: { $ne: true },
-      $or: [
-        { userId: userId },
-        { 'sharedWith.userId': userId }
-      ]
+      $or: [{ userId: userId }, { 'sharedWith.userId': userId }],
     })
       .sort({ lastAccessedAt: -1 })
       .limit(50)
