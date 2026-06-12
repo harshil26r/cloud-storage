@@ -77,7 +77,7 @@ const navItems = [
   },
 ];
 
-export default function Sidebar({ currentDir }) {
+export default function Sidebar({ currentDir, isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const storageUsed = 0;
@@ -85,44 +85,120 @@ export default function Sidebar({ currentDir }) {
   const storagePercent = Math.min((storageUsed / storageTotal) * 100, 100);
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-[calc(100vh-3.5rem)] sticky top-14 border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex-1 overflow-y-auto px-3 py-4">
-        {navItems.map((item) => {
-          const isActive =
-            item.path === "/"
-              ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
-              : item.path === "/shared"
-              ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
-              : location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? "bg-blue-50 text-blue-600 font-medium dark:bg-blue-900/30 dark:text-blue-400"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
-          <span>{storageUsed} GB of {storageTotal} GB used</span>
-          <span>{storagePercent.toFixed(0)}%</span>
-        </div>
-        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
+    <>
+      {/* Mobile Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 flex md:hidden">
           <div
-            className="h-full rounded-full bg-blue-500 transition-all"
-            style={{ width: `${storagePercent}%` }}
+            className="fixed inset-0 bg-gray-600/75 transition-opacity dark:bg-gray-955/80"
+            onClick={onClose}
           />
+          <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4 dark:bg-gray-900">
+            <div className="absolute top-2 right-2">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 focus:outline-none"
+                onClick={onClose}
+              >
+                <span className="sr-only">Close menu</span>
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-3 py-4 mt-8">
+              {navItems.map((item) => {
+                const isActive =
+                  item.path === "/"
+                    ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
+                    : item.path === "/shared"
+                    ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
+                    : location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      navigate(item.path);
+                      onClose();
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-blue-50 text-blue-600 font-medium dark:bg-blue-900/30 dark:text-blue-400"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
+                <span>{storageUsed} GB of {storageTotal} GB used</span>
+                <span>{storagePercent.toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
+                <div
+                  className="h-full rounded-full bg-blue-500 transition-all"
+                  style={{ width: `${storagePercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </aside>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-[calc(100vh-3.5rem)] sticky top-14 border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          {navItems.map((item) => {
+            const isActive =
+              item.path === "/"
+                ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
+                : item.path === "/shared"
+                ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
+                : location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? "bg-blue-50 text-blue-600 font-medium dark:bg-blue-900/30 dark:text-blue-400"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
+            <span>{storageUsed} GB of {storageTotal} GB used</span>
+            <span>{storagePercent.toFixed(0)}%</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
+            <div
+              className="h-full rounded-full bg-blue-500 transition-all"
+              style={{ width: `${storagePercent}%` }}
+            />
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }

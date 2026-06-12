@@ -19,7 +19,20 @@ export default function FileItem({
   onToggleStar,
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
   const isGoogleFile = !!item?.googleId;
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+    setShowActions(true);
+  };
+
+  const handleClose = () => {
+    setShowActions(false);
+    setMenuPosition(null);
+  };
 
   const initialState = isGoogleFile
     ? {
@@ -32,6 +45,7 @@ export default function FileItem({
     return (
       <div
         onClick={onOpen}
+        onContextMenu={handleContextMenu}
         className="group relative flex flex-col rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md hover:border-gray-300 cursor-pointer dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600 dark:hover:shadow-gray-900/50"
       >
         <div className="flex items-center justify-center aspect-[4/3] bg-gray-50 rounded-t-lg overflow-hidden dark:bg-gray-800">
@@ -52,7 +66,8 @@ export default function FileItem({
             <ActionMenu
               isOpen={showActions}
               onToggle={() => setShowActions(!showActions)}
-              onClose={() => setShowActions(false)}
+              onClose={handleClose}
+              menuPosition={menuPosition}
               onRename={onRename}
               onDelete={onDelete}
               item={item}
@@ -75,6 +90,7 @@ export default function FileItem({
   return (
     <tr
       onClick={onOpen}
+      onContextMenu={handleContextMenu}
       className={`group border-b border-gray-100 transition-colors cursor-pointer ${
         showActions ? "bg-gray-50" : "hover:bg-gray-50"
       } dark:border-gray-800 dark:hover:bg-gray-800/50`}
@@ -124,7 +140,8 @@ export default function FileItem({
           <ActionMenu
             isOpen={showActions}
             onToggle={() => setShowActions(!showActions)}
-            onClose={() => setShowActions(false)}
+            onClose={handleClose}
+            menuPosition={menuPosition}
             onRename={onRename}
             onDelete={onDelete}
             item={item}

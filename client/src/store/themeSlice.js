@@ -2,8 +2,11 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const getInitialTheme = () => {
   const stored = localStorage.getItem("theme");
-  if (stored) return stored === "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (typeof window !== "undefined") {
+    document.documentElement.classList.toggle("dark", isDark);
+  }
+  return isDark;
 };
 
 const themeSlice = createSlice({

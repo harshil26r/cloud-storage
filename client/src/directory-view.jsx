@@ -41,6 +41,7 @@ function DirectoryView({
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [renamingItem, setRenamingItem] = useState(null);
   const [sharingItem, setSharingItem] = useState(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -375,10 +376,17 @@ function DirectoryView({
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <Header onSyncComplete={getAllFiles} />
+      <Header
+        onSyncComplete={getAllFiles}
+        onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+      />
 
       <div className="flex">
-        <Sidebar currentDir={currentDir} />
+        <Sidebar
+          currentDir={currentDir}
+          isOpen={mobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
 
         <main className="flex-1 min-w-0">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -487,7 +495,7 @@ function DirectoryView({
             ) : (
               <>
                 {viewMode === "list" && (
-                  <div className="hidden overflow-x-auto md:block rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="hidden overflow-visible md:block rounded-lg border border-gray-200 dark:border-gray-700">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">

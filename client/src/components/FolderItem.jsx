@@ -14,11 +14,25 @@ export default function FolderItem({
   onToggleStar,
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+    setShowActions(true);
+  };
+
+  const handleClose = () => {
+    setShowActions(false);
+    setMenuPosition(null);
+  };
 
   if (viewMode === "grid") {
     return (
       <div
         onClick={onOpen}
+        onContextMenu={handleContextMenu}
         className="group relative flex flex-col rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md hover:border-gray-300 cursor-pointer dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600 dark:hover:shadow-gray-900/50"
       >
         <div className="flex items-center justify-center aspect-[4/3] bg-amber-50/40 rounded-t-lg overflow-hidden dark:bg-amber-900/20">
@@ -50,7 +64,8 @@ export default function FolderItem({
             <ActionMenu
               isOpen={showActions}
               onToggle={() => setShowActions(!showActions)}
-              onClose={() => setShowActions(false)}
+              onClose={handleClose}
+              menuPosition={menuPosition}
               onRename={onRename}
               onDelete={onDelete}
               onShare={onShare}
@@ -70,6 +85,7 @@ export default function FolderItem({
   return (
     <tr
       onClick={onOpen}
+      onContextMenu={handleContextMenu}
       className={`group border-b border-gray-100 transition-colors cursor-pointer ${
         showActions ? "bg-gray-50" : "hover:bg-gray-50"
       } dark:border-gray-800 dark:hover:bg-gray-800/50 dark:${showActions ? "bg-gray-800/30" : ""}`}
@@ -115,7 +131,8 @@ export default function FolderItem({
           <ActionMenu
             isOpen={showActions}
             onToggle={() => setShowActions(!showActions)}
-            onClose={() => setShowActions(false)}
+            onClose={handleClose}
+            menuPosition={menuPosition}
             onRename={onRename}
             onDelete={onDelete}
             onShare={onShare}

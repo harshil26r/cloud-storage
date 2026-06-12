@@ -14,8 +14,13 @@ export default function ActionMenu({
   onRestore,
   onDeletePermanently,
   onToggleStar,
+  isOpen: propIsOpen,
+  onToggle: propOnToggle,
+  onClose: propOnClose,
+  menuPosition,
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [localIsOpen, setLocalIsOpen] = useState(false);
+  const isOpen = propIsOpen !== undefined ? propIsOpen : localIsOpen;
   const isGoogleFile = isFile && item?.googleId;
   const isOnlineOnly =
     isGoogleFile &&
@@ -24,13 +29,37 @@ export default function ActionMenu({
 
   const toggleMenu = (e) => {
     e.stopPropagation();
-    setIsOpen(!isOpen);
+    if (propOnToggle) {
+      propOnToggle();
+    } else {
+      setLocalIsOpen(!localIsOpen);
+    }
   };
 
   const handleAction = (action) => {
-    setIsOpen(false);
+    if (propOnClose) {
+      propOnClose();
+    } else {
+      setLocalIsOpen(false);
+    }
     action();
   };
+
+  const getAdjustedPosition = () => {
+    if (!menuPosition) return null;
+    const menuWidth = 208; // w-52 is 13rem = 208px
+    const menuHeight = isTrashMode ? 90 : (isFile ? 280 : 180); // approximate heights
+    let x = menuPosition.x;
+    let y = menuPosition.y;
+    if (x + menuWidth > window.innerWidth) {
+      x = window.innerWidth - menuWidth - 8;
+    }
+    if (y + menuHeight > window.innerHeight) {
+      y = window.innerHeight - menuHeight - 8;
+    }
+    return { x: Math.max(8, x), y: Math.max(8, y) };
+  };
+  const adjustedCoords = getAdjustedPosition();
 
   const menuItemClass =
     "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors";
@@ -50,9 +79,17 @@ export default function ActionMenu({
 
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             <div
-              className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+              className="fixed inset-0 z-40"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (propOnClose) propOnClose();
+                else setLocalIsOpen(false);
+              }}
+            />
+            <div
+              className={adjustedCoords ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800" : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"}
+              style={adjustedCoords ? { left: `${adjustedCoords.x}px`, top: `${adjustedCoords.y}px` } : {}}
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -96,10 +133,15 @@ export default function ActionMenu({
         <>
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (propOnClose) propOnClose();
+              else setLocalIsOpen(false);
+            }}
           />
           <div
-            className="absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            className={adjustedCoords ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800" : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"}
+            style={adjustedCoords ? { left: `${adjustedCoords.x}px`, top: `${adjustedCoords.y}px` } : {}}
             onClick={(e) => e.stopPropagation()}
           >
             <button
