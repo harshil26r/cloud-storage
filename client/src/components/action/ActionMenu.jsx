@@ -86,6 +86,12 @@ export default function ActionMenu({
                 if (propOnClose) propOnClose();
                 else setLocalIsOpen(false);
               }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (propOnClose) propOnClose();
+                else setLocalIsOpen(false);
+              }}
             />
             <div
               className={adjustedCoords ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800" : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"}
@@ -134,6 +140,12 @@ export default function ActionMenu({
           <div
             className="fixed inset-0 z-40"
             onClick={(e) => {
+              e.stopPropagation();
+              if (propOnClose) propOnClose();
+              else setLocalIsOpen(false);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               if (propOnClose) propOnClose();
               else setLocalIsOpen(false);
