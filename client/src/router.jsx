@@ -26,6 +26,10 @@ export const router = createBrowserRouter([
     element: <DirectoryView isTrashMode={true} />,
   },
   {
+    path: "/search",
+    element: <DirectoryView isSearchMode={true} />,
+  },
+  {
     path: "/directory/:directoryId",
     element: <DirectoryView />,
   },

@@ -150,6 +150,18 @@ export const fetchRecentFiles = createAsyncThunk(
   }
 );
 
+export const fetchSearchResults = createAsyncThunk(
+  "directory/fetchSearchResults",
+  async (query, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(`/directory/search?q=${encodeURIComponent(query)}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 const directorySlice = createSlice({
   name: "directory",
   initialState: {
@@ -229,6 +241,20 @@ const directorySlice = createSlice({
         state.currentDir = { name: "Recent", isRecentMode: true };
       })
       .addCase(fetchRecentFiles.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchSearchResults.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSearchResults.fulfilled, (state, action) => {
+        state.loading = false;
+        state.directories = action.payload.directories || [];
+        state.files = action.payload.files || [];
+        state.currentDir = { name: "Search results", isSearchMode: true };
+      })
+      .addCase(fetchSearchResults.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

@@ -559,3 +559,32 @@ export const getStarredItems = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const searchItems = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { q } = req.query;
+
+    if (!q || q.trim().length === 0) {
+      return res.status(200).json({ files: [], directories: [] });
+    }
+
+    const regex = new RegExp(q.trim(), 'i');
+
+    const directories = await Directory.find({
+      name: { $regex: regex },
+      isTrashed: { $ne: true },
+      $or: [{ userId: userId }, { 'sharedWith.userId': userId }],
+    }).lean();
+
+    const files = await File.find({
+      name: { $regex: regex },
+      isTrashed: { $ne: true },
+      $or: [{ userId: userId }, { 'sharedWith.userId': userId }],
+    }).lean();
+
+    res.status(200).json({ directories, files });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

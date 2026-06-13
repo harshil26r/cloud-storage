@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import {
   fetchProfile,
@@ -15,6 +15,7 @@ import { GoogleDriveLogo } from "./GoogleDrive/icons";
 
 export default function Header({ onSyncComplete, onToggleMobileSidebar }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
 
   const user = useSelector((state) => state.user.user);
@@ -23,10 +24,32 @@ export default function Header({ onSyncComplete, onToggleMobileSidebar }) {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showGoogleDrivePanel, setShowGoogleDrivePanel] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    dispatch(fetchProfile());
-  }, [dispatch]);
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q") || "";
+    if (location.pathname === "/search") {
+      setQuery(q);
+    } else {
+      setQuery("");
+    }
+  }, [location]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate("/");
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch, user]);
 
   const handleLogout = async () => {
     const result = await dispatch(logoutUser());
@@ -94,7 +117,7 @@ export default function Header({ onSyncComplete, onToggleMobileSidebar }) {
               </h1>
             </div>
 
-            <div className="hidden sm:flex flex-1 max-w-md mx-4">
+            <form onSubmit={handleSearchSubmit} className="hidden sm:flex flex-1 max-w-md mx-4">
               <div className="relative w-full">
                 <svg
                   className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500"
@@ -111,11 +134,13 @@ export default function Header({ onSyncComplete, onToggleMobileSidebar }) {
                 </svg>
                 <input
                   type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search in My Drive"
                   className="w-full rounded-lg bg-gray-100 pl-10 pr-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:bg-gray-800"
                 />
               </div>
-            </div>
+            </form>
 
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex items-center rounded-lg bg-slate-100 p-0.5 dark:bg-gray-800">

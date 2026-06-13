@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -22,6 +22,7 @@ import {
   emptyTrashBin,
   fetchStarredItems,
   fetchRecentFiles,
+  fetchSearchResults,
 } from "./store/directorySlice";
 import { renameFileAction } from "./store/fileSlice";
 import { makeGDriveOffline, uploadGDriveFile } from "./store/googleDriveSlice";
@@ -36,6 +37,7 @@ function DirectoryView({
   isTrashMode = false,
   isStarredMode = false,
   isRecentMode = false,
+  isSearchMode = false,
 }) {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
@@ -47,6 +49,8 @@ function DirectoryView({
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { directoryId } = useParams();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
 
   // Redux Selectors
   const viewMode = useSelector((state) => state.ui.viewMode);
@@ -68,6 +72,8 @@ function DirectoryView({
       dispatch(fetchStarredItems());
     } else if (isRecentMode) {
       dispatch(fetchRecentFiles());
+    } else if (isSearchMode) {
+      dispatch(fetchSearchResults(searchQuery));
     } else {
       dispatch(fetchDirectories(directoryId || ""));
     }
@@ -78,6 +84,8 @@ function DirectoryView({
     isTrashMode,
     isStarredMode,
     isRecentMode,
+    isSearchMode,
+    searchQuery,
   ]);
 
   const handleToggleStar = useCallback(

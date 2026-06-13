@@ -14,6 +14,7 @@ import {
   emptyTrash,
   toggleStarDirectory,
   getStarredItems,
+  searchItems,
 } from '../controllers/directoryController.js';
 
 const dirRouter = Router();
@@ -21,6 +22,7 @@ const dirRouter = Router();
 dirRouter.get('/shared-with-me', getSharedWithMe);
 dirRouter.get('/trash-bin', getTrashBin);
 dirRouter.get('/starred', getStarredItems);
+dirRouter.get('/search', searchItems);
 
 dirRouter.get('/', getDirectory);
 dirRouter.get('/:id', getDirectory);
