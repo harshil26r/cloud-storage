@@ -4,6 +4,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { File } from '../models/fileModel.js';
 import { Directory } from '../models/directoryModel.js';
+import { hasAccess } from '../middleware/checkAccess.js';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
@@ -36,9 +37,9 @@ export const getThumbnail = async (req, res) => {
     const fileInfo = await File.findOne({ _id }).lean();
     if (!fileInfo) return res.status(404).json({ error: 'File not found' });
 
-    const parentDir = await Directory.findOne({ _id: fileInfo.parentDirId });
-    if (parentDir?.userId.toString() !== user._id.toString()) {
-      return res.status(401).json({ error: 'No permission' });
+    const allowed = await hasAccess(user?._id, fileInfo, 'file', 'viewer');
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
     }
 
     if (fileInfo.googleId && fileInfo.syncState !== 'offline') {
