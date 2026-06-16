@@ -33,9 +33,9 @@ export default function FolderItem({
       <div
         onClick={onOpen}
         onContextMenu={handleContextMenu}
-        className="group relative flex flex-col rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md hover:border-gray-300 cursor-pointer dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600 dark:hover:shadow-gray-900/50"
+        className="group relative flex flex-col rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-slate-200 cursor-pointer dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 dark:hover:shadow-gray-950/50"
       >
-        <div className="flex items-center justify-center aspect-[4/3] bg-amber-50/40 rounded-t-lg overflow-hidden dark:bg-amber-900/20">
+        <div className="flex items-center justify-center aspect-[4/3] bg-amber-50/20 rounded-t-2xl overflow-hidden transition-all group-hover:bg-amber-50/40 dark:bg-amber-900/10 dark:group-hover:bg-amber-900/20">
           <svg
             className="h-16 w-16 text-amber-400 dark:text-amber-500"
             fill="currentColor"

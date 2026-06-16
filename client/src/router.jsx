@@ -1,8 +1,22 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
-import DirectoryView from "./directory-view";
-import Login from "./components/auth/login";
-import SignUp from "./components/auth/signup";
-import NotFound from "./components/NotFound";
+import DirectoryView from "./directoryview";
+
+const Login = lazy(() => import("./components/auth/login"));
+const SignUp = lazy(() => import("./components/auth/signup"));
+const NotFound = lazy(() => import("./components/NotFound"));
+
+const withSuspense = (Component, props = {}) => (
+  <Suspense
+    fallback={
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    }
+  >
+    <Component {...props} />
+  </Suspense>
+);
 
 export const router = createBrowserRouter([
   {
@@ -35,14 +49,14 @@ export const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <Login />,
+    element: withSuspense(Login),
   },
   {
     path: "/signup",
-    element: <SignUp />,
+    element: withSuspense(SignUp),
   },
   {
     path: "*",
-    element: <NotFound />,
+    element: withSuspense(NotFound),
   },
 ]);

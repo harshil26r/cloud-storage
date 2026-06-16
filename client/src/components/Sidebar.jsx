@@ -128,7 +128,7 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
                 </svg>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-3 py-4 mt-8">
+            <div className="flex-1 overflow-y-auto px-3 py-4 mt-8 space-y-2.5">
               {navItems.map((item) => {
                 const isActive =
                   item.path === "/"
@@ -147,10 +147,10 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
                       navigate(item.path);
                       onClose();
                     }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-95 ${
                       isActive
-                        ? "bg-blue-50 text-blue-600 font-medium dark:bg-blue-900/30 dark:text-blue-400"
-                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                        ? "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 font-semibold shadow-sm border-l-4 border-blue-500 dark:from-blue-900/20 dark:to-indigo-900/20 dark:text-blue-400"
+                        : "text-slate-600 hover:bg-slate-50 dark:text-gray-400 dark:hover:bg-gray-800/60"
                     }`}
                   >
                     {item.icon}
@@ -159,19 +159,20 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
                 );
               })}
             </div>
-            <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
-                <span>
-                  {storageUsedText} of {storageTotalMB} MB used
-                </span>
+            <div className="m-4 p-4 rounded-xl bg-slate-50 border border-slate-100 shadow-sm dark:bg-gray-800/40 dark:border-gray-800">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2 dark:text-gray-400">
+                <span>Storage</span>
                 <span>{storagePercent.toFixed(1)}%</span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
+              <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden dark:bg-gray-700">
                 <div
-                  className="h-full rounded-full bg-blue-500 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
                   style={{ width: `${storagePercent}%` }}
                 />
               </div>
+              <p className="mt-2 text-[10px] text-slate-400 dark:text-gray-500 font-medium">
+                {storageUsedText} of {storageTotalMB} MB used
+              </p>
             </div>
           </div>
         </div>
@@ -179,7 +180,7 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:flex-col md:w-64 lg:w-72 h-[calc(100vh-3.5rem)] sticky top-14 border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const isActive =
               item.path === "/"
@@ -195,10 +196,10 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-95 ${
                   isActive
-                    ? "bg-blue-50 text-blue-600 font-medium dark:bg-blue-900/30 dark:text-blue-400"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    ? "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 font-semibold shadow-sm border-l-4 border-blue-500 dark:from-blue-900/20 dark:to-indigo-900/20 dark:text-blue-400"
+                    : "text-slate-600 hover:bg-slate-50 dark:text-gray-400 dark:hover:bg-gray-800/60"
                 }`}
               >
                 {item.icon}
@@ -208,19 +209,20 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
           })}
         </div>
 
-        <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5 dark:text-gray-400">
-            <span>
-              {storageUsedText} of {storageTotalMB} MB used
-            </span>
+        <div className="m-4 p-4 rounded-xl bg-slate-50 border border-slate-100 shadow-sm dark:bg-gray-800/40 dark:border-gray-800">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2 dark:text-gray-400">
+            <span>Storage</span>
             <span>{storagePercent.toFixed(1)}%</span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
+          <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden dark:bg-gray-700">
             <div
-              className="h-full rounded-full bg-blue-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
               style={{ width: `${storagePercent}%` }}
             />
           </div>
+          <p className="mt-2 text-[10px] text-slate-400 dark:text-gray-500 font-medium">
+            {storageUsedText} of {storageTotalMB} MB used
+          </p>
         </div>
       </aside>
     </>

@@ -9,10 +9,24 @@ import { getStorageUsed, STORAGE_LIMIT } from '../utils/storageHelper.js';
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
   const user = await User.findOne({ email });
 
   if (!user) {
     return res.status(404).json({ error: 'Invalid Credentials' });
+  }
+
+  if (!user.password) {
+    return res.status(400).json({
+      error: 'This account was created with Google. Please use Google Login.',
+    });
+  }
+
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required' });
   }
 
   const validPass = await user.comparePassword(password);
@@ -29,11 +43,27 @@ export const login = async (req, res) => {
     signed: true,
   });
 
-  res.json({ message: 'User login Sucessfully' });
+  res.json({ message: 'User login Successfully' });
 };
 
 export const signup = async (req, res) => {
   const { username, email, password } = req.body;
+
+  if (!username || username.trim().length < 3) {
+    return res
+      .status(400)
+      .json({ error: 'Username must be at least 3 characters long' });
+  }
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  if (!password || password.trim().length < 3) {
+    return res
+      .status(400)
+      .json({ error: 'Password must be at least 3 characters long' });
+  }
 
   const existingUser = await User.findOne({ email }).lean();
 
