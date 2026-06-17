@@ -37,12 +37,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  if (req.query.action === 'download') {
-    res.set('Content-Disposition', `attachment;`);
-  }
-  express.static('storage')(req, res, next); // serve public folder
-});
 
 // Global Error Handler
 app.use((err, req, res, next) => {

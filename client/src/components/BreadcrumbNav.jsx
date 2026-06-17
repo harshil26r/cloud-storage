@@ -1,7 +1,7 @@
 export default function BreadcrumbNav({ currentDir, onBack }) {
   return (
     <div className="flex items-center gap-1 min-w-0">
-      {currentDir?._id && currentDir?._id !== currentDir?.parentDirId && (
+      {currentDir?._id && currentDir?.parentDirId && (
         <button
           onClick={onBack}
           className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:bg-gray-800"

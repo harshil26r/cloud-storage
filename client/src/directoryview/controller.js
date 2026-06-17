@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
-import { showSuccessToast, showErrorToast } from "../utils/toastConfig";
+import {
+  showSuccessToast,
+  showErrorToast,
+  showLoadingToast,
+} from "../utils/toastConfig";
 import {
   fetchDirectories,
   fetchSharedWithMe,
@@ -264,17 +268,18 @@ export default function useDirectoryViewController({
       form.append("file", file);
       form.append("parentDirId", parentId);
 
+      const toastId = showLoadingToast("Uploading file to Google Drive...");
       try {
         const result = await dispatch(uploadGDriveFile(form));
         if (!result.error) {
-          showSuccessToast(result.payload.message);
+          showSuccessToast(result.payload.message, toastId);
           getAllFiles();
           dispatch(fetchProfile());
         } else {
-          showErrorToast(result.payload || "Upload failed");
+          showErrorToast(result.payload || "Upload failed", toastId);
         }
       } catch (error) {
-        showErrorToast(error.message);
+        showErrorToast(error.message, toastId);
       }
       e.target.value = "";
       return;
@@ -283,33 +288,49 @@ export default function useDirectoryViewController({
     const form = new FormData();
     form.append("file", file);
     form.append("parentDirId", parentId);
+
+    const toastId = showLoadingToast("Starting upload...");
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${BASE_URL}file/`, true);
     xhr.withCredentials = true;
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        showLoadingToast(`Uploading... ${percent}%`, toastId);
+      }
+    });
+
     xhr.addEventListener("load", () => {
       try {
         const response = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300) {
-          showSuccessToast(response.message);
+          showSuccessToast(response.message, toastId);
           getAllFiles();
           dispatch(fetchProfile());
         } else {
-          showErrorToast(response.message || response.error);
+          showErrorToast(
+            response.message || response.error || "Upload failed",
+            toastId,
+          );
         }
       } catch (parseError) {
         if (xhr.status >= 200 && xhr.status < 300) {
-          showSuccessToast("File uploaded successfully!");
+          showSuccessToast("File uploaded successfully!", toastId);
           getAllFiles();
           dispatch(fetchProfile());
         } else {
-          showErrorToast(`Failed to upload file : ${parseError}`);
+          showErrorToast(`Failed to upload file : ${parseError}`, toastId);
         }
       }
       e.target.value = "";
     });
+
     xhr.addEventListener("error", () => {
-      showErrorToast("Upload error occurred");
+      showErrorToast("Upload error occurred", toastId);
+      e.target.value = "";
     });
+
     xhr.send(form);
   };
 

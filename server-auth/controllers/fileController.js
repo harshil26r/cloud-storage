@@ -77,6 +77,13 @@ export const serveFile = async (req, res) => {
         user._id,
       );
 
+      stream.on('error', (err) => {
+        console.error('Google Drive stream error:', err);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'Failed to retrieve Google Drive file stream' });
+        }
+      });
+
       if (req.query.action === 'download') {
         res.setHeader(
           'Content-Disposition',

@@ -7,8 +7,8 @@ const directorySchema = new Schema(
       trim: true,
       minLength: 3,
     },
-    userId: { type: Schema.Types.ObjectId },
-    parentDirId: { type: Schema.Types.ObjectId },
+    userId: { type: Schema.Types.ObjectId, index: true },
+    parentDirId: { type: Schema.Types.ObjectId, index: true },
     // Google Drive fields
     googleId: { type: String },
     mimeType: { type: String },
@@ -46,5 +46,8 @@ const directorySchema = new Schema(
     collection: 'directories',
   },
 );
+
+directorySchema.index({ parentDirId: 1, isTrashed: 1 });
+directorySchema.index({ userId: 1, isTrashed: 1 });
 
 export const Directory = model('Directory', directorySchema);

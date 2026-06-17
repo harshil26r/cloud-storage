@@ -69,9 +69,11 @@ function DirectoryView({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <BreadcrumbNav
                 currentDir={ctrl.currentDir}
-                onBack={() =>
-                  ctrl.navigate(`/directory/${ctrl.currentDir.parentDirId}`)
-                }
+                onBack={() => {
+                  if (ctrl.currentDir?.parentDirId) {
+                    ctrl.navigate(`/directory/${ctrl.currentDir.parentDirId}`);
+                  }
+                }}
               />
 
               {isTrashMode ? (

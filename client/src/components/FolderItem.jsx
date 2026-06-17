@@ -60,7 +60,7 @@ export default function FolderItem({
               {item?.googleId ? "Google Drive" : "Folder"}
             </p>
           </div>
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
             <ActionMenu
               isOpen={showActions}
               onToggle={() => setShowActions(!showActions)}
@@ -127,6 +127,7 @@ export default function FolderItem({
         <div
           className={`transition-opacity ${showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.stopPropagation()}
         >
           <ActionMenu
             isOpen={showActions}

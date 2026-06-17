@@ -27,16 +27,16 @@ const toastStyles = {
   },
 };
 
-export const showSuccessToast = (message) => {
-  toast.success(message, toastStyles.success);
+export const showSuccessToast = (message, toastId) => {
+  toast.success(message, toastId ? { id: toastId, ...toastStyles.success } : toastStyles.success);
 };
 
-export const showErrorToast = (message) => {
-  toast.error(message, toastStyles.error);
+export const showErrorToast = (message, toastId) => {
+  toast.error(message, toastId ? { id: toastId, ...toastStyles.error } : toastStyles.error);
 };
 
-export const showLoadingToast = (message) => {
-  return toast.loading(message);
+export const showLoadingToast = (message, toastId) => {
+  return toast.loading(message, toastId ? { id: toastId } : undefined);
 };
 
 export const dismissToast = (toastId) => {

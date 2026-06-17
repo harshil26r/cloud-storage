@@ -7,6 +7,7 @@ export default function FileItem({
   item,
   viewMode,
   onOpen,
+  onDownload,
   onRename,
   onDelete,
   onMakeOffline,
@@ -66,13 +67,15 @@ export default function FileItem({
               </svg>
             )}
           </div>
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.stopPropagation()}>
             <ActionMenu
               isOpen={showActions}
               onToggle={() => setShowActions(!showActions)}
               onClose={handleClose}
               menuPosition={menuPosition}
+              onOpen={onOpen}
               onRename={onRename}
+              onDownload={onDownload}
               onDelete={onDelete}
               item={item}
               onMakeOffline={onMakeOffline}
@@ -148,13 +151,16 @@ export default function FileItem({
         <div
           className={`transition-opacity ${showActions ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.stopPropagation()}
         >
           <ActionMenu
             isOpen={showActions}
             onToggle={() => setShowActions(!showActions)}
             onClose={handleClose}
             menuPosition={menuPosition}
+            onOpen={onOpen}
             onRename={onRename}
+            onDownload={onDownload}
             onDelete={onDelete}
             item={item}
             onMakeOffline={onMakeOffline}

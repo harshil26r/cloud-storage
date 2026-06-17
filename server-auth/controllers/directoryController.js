@@ -15,7 +15,10 @@ export const getDirectory = async (req, res) => {
   try {
     const { user } = req;
 
-    const _id = req.params.id ? req.params.id : user.rootDirId;
+    let _id = req.params.id ? req.params.id : user.rootDirId;
+    if (_id === 'null' || _id === 'undefined') {
+      _id = user.rootDirId;
+    }
 
     if (!_id) {
       return res.status(400).json({ error: 'No directory ID provided' });

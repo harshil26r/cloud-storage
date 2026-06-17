@@ -166,7 +166,7 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
               </div>
               <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden dark:bg-gray-700">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                  className="h-full rounded-full bg-blue-600 transition-all duration-500 dark:bg-blue-500"
                   style={{ width: `${storagePercent}%` }}
                 />
               </div>
@@ -216,7 +216,7 @@ export default function Sidebar({ currentDir, isOpen, onClose }) {
           </div>
           <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden dark:bg-gray-700">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+              className="h-full rounded-full bg-blue-600 transition-all duration-500 dark:bg-blue-500"
               style={{ width: `${storagePercent}%` }}
             />
           </div>

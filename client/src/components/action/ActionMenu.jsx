@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function ActionMenu({
   item,
@@ -22,6 +23,30 @@ export default function ActionMenu({
   const [localIsOpen, setLocalIsOpen] = useState(false);
   const isOpen = propIsOpen !== undefined ? propIsOpen : localIsOpen;
   const isGoogleFile = isFile && item?.googleId;
+
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleOutsideEvent = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        if (propOnClose) {
+          propOnClose();
+        } else {
+          setLocalIsOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideEvent);
+    document.addEventListener("contextmenu", handleOutsideEvent);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideEvent);
+      document.removeEventListener("contextmenu", handleOutsideEvent);
+    };
+  }, [isOpen, propOnClose]);
   const isOnlineOnly =
     isGoogleFile &&
     item?.syncState === "online_only" &&
@@ -42,13 +67,15 @@ export default function ActionMenu({
     } else {
       setLocalIsOpen(false);
     }
-    action();
+    if (typeof action === "function") {
+      action();
+    }
   };
 
   const getAdjustedPosition = () => {
     if (!menuPosition) return null;
     const menuWidth = 208; // w-52 is 13rem = 208px
-    const menuHeight = isTrashMode ? 90 : (isFile ? 280 : 180); // approximate heights
+    const menuHeight = isTrashMode ? 90 : isFile ? 280 : 180; // approximate heights
     let x = menuPosition.x;
     let y = menuPosition.y;
     if (x + menuWidth > window.innerWidth) {
@@ -64,6 +91,13 @@ export default function ActionMenu({
   const menuItemClass =
     "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors";
 
+  const renderMenu = (menuContent) => {
+    if (adjustedCoords) {
+      return createPortal(menuContent, document.body);
+    }
+    return menuContent;
+  };
+
   if (isTrashMode) {
     return (
       <div className="relative inline-block">
@@ -77,33 +111,42 @@ export default function ActionMenu({
           </svg>
         </button>
 
-        {isOpen && (
-          <>
+        {isOpen &&
+          renderMenu(
             <div
-              className="fixed inset-0 z-40"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (propOnClose) propOnClose();
-                else setLocalIsOpen(false);
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (propOnClose) propOnClose();
-                else setLocalIsOpen(false);
-              }}
-            />
-            <div
-              className={adjustedCoords ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800" : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"}
-              style={adjustedCoords ? { left: `${adjustedCoords.x}px`, top: `${adjustedCoords.y}px` } : {}}
+              ref={menuRef}
+              className={
+                adjustedCoords
+                  ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                  : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+              }
+              style={
+                adjustedCoords
+                  ? {
+                      left: `${adjustedCoords.x}px`,
+                      top: `${adjustedCoords.y}px`,
+                    }
+                  : {}
+              }
               onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => handleAction(onRestore)}
                 className={`${menuItemClass} text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30`}
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
                 </svg>
                 Restore
               </button>
@@ -111,14 +154,23 @@ export default function ActionMenu({
                 onClick={() => handleAction(onDeletePermanently)}
                 className={`${menuItemClass} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30`}
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
                 Delete permanently
               </button>
-            </div>
-          </>
-        )}
+            </div>,
+          )}
       </div>
     );
   }
@@ -135,26 +187,25 @@ export default function ActionMenu({
         </svg>
       </button>
 
-      {isOpen && (
-        <>
+      {isOpen &&
+        renderMenu(
           <div
-            className="fixed inset-0 z-40"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (propOnClose) propOnClose();
-              else setLocalIsOpen(false);
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (propOnClose) propOnClose();
-              else setLocalIsOpen(false);
-            }}
-          />
-          <div
-            className={adjustedCoords ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800" : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"}
-            style={adjustedCoords ? { left: `${adjustedCoords.x}px`, top: `${adjustedCoords.y}px` } : {}}
+            ref={menuRef}
+            className={
+              adjustedCoords
+                ? "fixed z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                : "absolute right-0 z-50 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            }
+            style={
+              adjustedCoords
+                ? {
+                    left: `${adjustedCoords.x}px`,
+                    top: `${adjustedCoords.y}px`,
+                  }
+                : {}
+            }
             onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => handleAction(onOpen)}
@@ -327,9 +378,8 @@ export default function ActionMenu({
               </svg>
               Delete
             </button>
-          </div>
-        </>
-      )}
+          </div>,
+        )}
     </div>
   );
 }
