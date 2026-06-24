@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import * as shareAPI from "../../api/shareAPI";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 
-export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSuccess }) {
+export default function ShareDialog({
+  isOpen,
+  itemId,
+  isFile,
+  onClose,
+  onShareSuccess,
+}) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -114,7 +120,7 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
   const handleAddPerson = (user, role = "viewer") => {
     // Check if user is already added
     const isAlreadyShared = sharedWith.some(
-      (share) => share.userId === user._id || share.email === user.email
+      (share) => share.userId === user._id || share.email === user.email,
     );
     if (isAlreadyShared) {
       showErrorToast("User is already in the list");
@@ -165,16 +171,16 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
     setSaving(true);
     try {
       const shareData = {
-        sharedWith: sharedWith.map(s => ({
+        sharedWith: sharedWith.map((s) => ({
           userId: s.userId,
           email: s.email,
-          role: s.role
+          role: s.role,
         })),
         generalAccess,
         settings: {
           allowEditorShare,
-          allowDownload
-        }
+          allowDownload,
+        },
       };
 
       await shareAPI.updateShareSettings(itemId, isFile, shareData);
@@ -183,7 +189,11 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
       onClose();
     } catch (error) {
       console.error("Failed to save share settings:", error);
-      showErrorToast(error.response?.data?.error || error.message || "Failed to save share settings");
+      showErrorToast(
+        error.response?.data?.error ||
+          error.message ||
+          "Failed to save share settings",
+      );
     } finally {
       setSaving(false);
     }
@@ -200,13 +210,25 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                 onClick={() => setShowSettings(false)}
                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
                 </svg>
               </button>
             )}
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {showSettings ? "Sharing settings" : `Share "${isFile ? "File" : "Folder"}"`}
+              {showSettings
+                ? "Sharing settings"
+                : `Share "${isFile ? "File" : "Folder"}"`}
             </h2>
           </div>
           <div className="flex items-center gap-1">
@@ -216,9 +238,24 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors"
                 title="Sharing settings"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
               </button>
             )}
@@ -226,8 +263,18 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
               onClick={onClose}
               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -253,7 +300,8 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                     Allow editors to change permissions and share
                   </span>
                   <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    If unchecked, only the owner can change permissions and add/remove users.
+                    If unchecked, only the owner can change permissions and
+                    add/remove users.
                   </span>
                 </div>
               </label>
@@ -271,7 +319,8 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                       Allow viewers to download, copy, and print
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      If unchecked, users with Viewer role cannot download or save copies of this file.
+                      If unchecked, users with Viewer role cannot download or
+                      save copies of this file.
                     </span>
                   </div>
                 </label>
@@ -292,8 +341,18 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
             {/* User Search Input */}
             <div ref={searchRef} className="relative">
               <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent bg-gray-50 dark:bg-gray-800/40">
-                <svg className="w-5 h-5 text-gray-400 ml-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                <svg
+                  className="w-5 h-5 text-gray-400 ml-3 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
                 </svg>
                 <input
                   type="text"
@@ -314,7 +373,10 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                       className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
                     >
                       <img
-                        src={user.picture || "https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg"}
+                        src={
+                          user.picture ||
+                          "https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg"
+                        }
                         alt={user.username}
                         className="w-8 h-8 rounded-full object-cover border border-gray-100 dark:border-gray-700 shrink-0"
                       />
@@ -361,16 +423,22 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
 
                 {/* Shared Users */}
                 {sharedWith.map((share, idx) => (
-                  <div key={share.userId || idx} className="flex items-center justify-between gap-3 animate-fade-in">
+                  <div
+                    key={share.userId || idx}
+                    className="flex items-center justify-between gap-3 animate-fade-in"
+                  >
                     <div className="flex items-center gap-3 min-w-0">
                       <img
-                        src={share.picture || "https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg"}
+                        src={
+                          share.picture ||
+                          "https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg"
+                        }
                         alt={share.username || share.email}
                         className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-100 dark:border-gray-800"
                       />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                          {share.username || share.email.split('@')[0]}
+                          {share.username || share.email.split("@")[0]}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {share.email}
@@ -402,12 +470,32 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                 <div className="flex items-start gap-3 min-w-0">
                   <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 dark:bg-gray-800 text-gray-500">
                     {generalAccess === "restricted" ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                        />
                       </svg>
                     )}
                   </div>
@@ -436,8 +524,18 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                 onClick={handleCopyLink}
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                  />
                 </svg>
                 {copying ? "Link copied!" : "Copy link"}
               </button>
@@ -454,7 +552,9 @@ export default function ShareDialog({ isOpen, itemId, isFile, onClose, onShareSu
                   disabled={saving}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
                 >
-                  {saving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" />}
+                  {saving && (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                  )}
                   Done
                 </button>
               </div>
