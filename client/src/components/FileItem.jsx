@@ -13,6 +13,9 @@ export default function FileItem({
   onOpenInDrive,
   onStatusChange,
   onShare,
+  isTrashMode,
+  onRestore,
+  onDeletePermanently,
 }) {
   const [showActions, setShowActions] = useState(false);
   const modifiedDate = item?.modifiedAt || item?.modified;
@@ -50,6 +53,9 @@ export default function FileItem({
               onOpenInDrive={onOpenInDrive}
               onStatusChange={onStatusChange}
               onShare={onShare}
+              isTrashMode={isTrashMode}
+              onRestore={onRestore}
+              onDeletePermanently={onDeletePermanently}
             />
           </div>
         </div>
@@ -110,6 +116,9 @@ export default function FileItem({
             onOpenInDrive={onOpenInDrive}
             onStatusChange={onStatusChange}
             onShare={onShare}
+            isTrashMode={isTrashMode}
+            onRestore={onRestore}
+            onDeletePermanently={onDeletePermanently}
           />
         </div>
       </td>

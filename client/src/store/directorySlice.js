@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as directoryAPI from "../api/directoryAPI";
 import * as shareAPI from "../api/shareAPI";
+import axiosInstance from "../api/axiosInstance";
 
 export const fetchDirectories = createAsyncThunk(
   "directory/fetchDirectories",
@@ -101,6 +102,30 @@ export const moveDir = createAsyncThunk(
   },
 );
 
+export const fetchTrashBin = createAsyncThunk(
+  "directory/fetchTrashBin",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/directory/trash-bin");
+      return response.data; // { files, directories }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
+export const emptyTrashBin = createAsyncThunk(
+  "directory/emptyTrashBin",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post("/directory/trash/empty");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 const directorySlice = createSlice({
   name: "directory",
   initialState: {
@@ -140,6 +165,20 @@ const directorySlice = createSlice({
       .addCase(fetchSharedWithMe.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
+      })
+      .addCase(fetchTrashBin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrashBin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.directories = action.payload.directories;
+        state.files = action.payload.files;
+        state.currentDir = { name: "Trash", isTrashMode: true };
+      })
+      .addCase(fetchTrashBin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

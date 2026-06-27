@@ -9,11 +9,15 @@ import isLogin from './middleware/isLogin.js';
 import refreshTokenMiddleware from './middleware/refreshToken.js';
 import { connectDB } from './middleware/mongoConnect.js';
 import userRoutes from './routes/user-routes.js';
+import { startTrashCleaner } from './services/trashCleaner.js';
 
 const port = 4000;
 const app = express();
 
 const db = await connectDB();
+
+// Run cleanup scheduler
+startTrashCleaner();
 
 app.use(express.json()); // parse body for all request
 app.use(

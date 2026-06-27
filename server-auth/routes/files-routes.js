@@ -7,6 +7,9 @@ import {
   uploadFile,
   getShareSettings,
   updateShareSettings,
+  trashFile,
+  restoreFile,
+  deleteFilePermanent,
 } from '../controllers/fileController.js';
 import { getThumbnail } from '../controllers/thumbnailController.js';
 
@@ -20,8 +23,10 @@ fileRouter.post('/', fileUploadMiddleware, uploadFile);
 
 fileRouter.route('/:id').patch(renameFile).delete(deleteFile);
 
-fileRouter.route('/:id/share')
-  .get(getShareSettings)
-  .post(updateShareSettings);
+fileRouter.route('/:id/share').get(getShareSettings).post(updateShareSettings);
+
+fileRouter.patch('/:id/trash', trashFile);
+fileRouter.patch('/:id/restore', restoreFile);
+fileRouter.delete('/:id/permanent', deleteFilePermanent);
 
 export default fileRouter;

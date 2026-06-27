@@ -8,6 +8,9 @@ export default function FolderItem({
   onRename,
   onDelete,
   onShare,
+  isTrashMode,
+  onRestore,
+  onDeletePermanently,
 }) {
   const [showActions, setShowActions] = useState(false);
 
@@ -43,6 +46,9 @@ export default function FolderItem({
               onRename={onRename}
               onDelete={onDelete}
               onShare={onShare}
+              isTrashMode={isTrashMode}
+              onRestore={onRestore}
+              onDeletePermanently={onDeletePermanently}
             />
           </div>
         </div>
@@ -95,6 +101,9 @@ export default function FolderItem({
             onRename={onRename}
             onDelete={onDelete}
             onShare={onShare}
+            isTrashMode={isTrashMode}
+            onRestore={onRestore}
+            onDeletePermanently={onDeletePermanently}
           />
         </div>
       </td>

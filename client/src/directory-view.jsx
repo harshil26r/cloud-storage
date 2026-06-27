@@ -19,6 +19,8 @@ import {
   createDir,
   updateDir,
   deleteDir,
+  fetchTrashBin,
+  emptyTrashBin,
 } from "./store/directorySlice";
 import { deleteSingleFile, renameFileAction } from "./store/fileSlice";
 import {
@@ -27,10 +29,11 @@ import {
   uploadGDriveFile,
 } from "./store/googleDriveSlice";
 import { GoogleDriveLogo } from "./components/GoogleDrive/icons";
+import axiosInstance from "./api/axiosInstance";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-function DirectoryView({ isSharedMode = false }) {
+function DirectoryView({ isSharedMode = false, isTrashMode = false }) {
   const [newFileName, setNewFileName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -53,68 +56,59 @@ function DirectoryView({ isSharedMode = false }) {
   const isGoogleDriveFolder = !!currentDir?.googleId;
 
   const getAllFiles = useCallback(() => {
-    if (isSharedMode) {
+    if (isTrashMode) {
+      dispatch(fetchTrashBin());
+    } else if (isSharedMode) {
       dispatch(fetchSharedWithMe());
     } else {
       dispatch(fetchDirectories(directoryId || ""));
     }
-  }, [dispatch, directoryId, isSharedMode]);
+  }, [dispatch, directoryId, isSharedMode, isTrashMode]);
 
-  const handleDelete = useCallback(async (_id, isFile, item) => {
+  const handleTrash = useCallback(async (_id, isFile) => {
     try {
-      if (isFile && item?.googleId) {
-        const deleteLocal =
-          item.syncState === "offline" || item.storageMode === "offline";
-        const confirmMsg = deleteLocal
-          ? "Delete this file from Google Drive and remove the local copy?"
-          : "Delete this file from Google Drive?";
-        if (!window.confirm(confirmMsg)) return;
-
-        const result = await dispatch(
-          deleteGDriveFile({ fileId: _id, deleteLocal }),
-        );
-        if (!result.error) {
-          showSuccessToast(result.payload.message);
-          getAllFiles();
-        } else {
-          showErrorToast(result.payload || "Failed to delete file");
-        }
-      } else if (!isFile && item?.googleId) {
-        const isVirtualRoot = item.googleId === "root";
-        const confirmMsg = isVirtualRoot
-          ? "Remove the Google Drive folder from this app? Your files will stay in Google Drive."
-          : "Delete this folder and all its contents from Google Drive?";
-        if (!window.confirm(confirmMsg)) return;
-
-        const result = await dispatch(deleteDir(_id));
-        if (!result.error) {
-          showSuccessToast(result.payload.message);
-          getAllFiles();
-        } else {
-          showErrorToast(result.payload || "Failed to delete directory");
-        }
-      } else {
-        const confirmMsg = isFile
-          ? "Delete this file?"
-          : "Delete this folder and everything inside it?";
-        if (!window.confirm(confirmMsg)) return;
-
-        const result = isFile
-          ? await dispatch(deleteSingleFile(_id))
-          : await dispatch(deleteDir(_id));
-
-        if (!result.error) {
-          showSuccessToast(result.payload.message);
-          getAllFiles();
-        } else {
-          showErrorToast(result.payload || "Failed to delete");
-        }
-      }
+      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/trash`;
+      await axiosInstance.patch(endpoint);
+      showSuccessToast("Moved to Trash");
+      getAllFiles();
     } catch (error) {
-      console.error("Error deleting:", error);
-      showErrorToast(error.message);
+      showErrorToast(error.response?.data?.error || error.message);
     }
-  }, []);
+  }, [getAllFiles]);
+
+  const handleRestore = useCallback(async (_id, isFile) => {
+    try {
+      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/restore`;
+      await axiosInstance.patch(endpoint);
+      showSuccessToast("Restored successfully");
+      getAllFiles();
+    } catch (error) {
+      showErrorToast(error.response?.data?.error || error.message);
+    }
+  }, [getAllFiles]);
+
+  const handleDeletePermanently = useCallback(async (_id, isFile) => {
+    if (!window.confirm("Are you sure you want to permanently delete this? This cannot be undone.")) return;
+    try {
+      const endpoint = `/${isFile ? "file" : "directory"}/${_id}/permanent`;
+      await axiosInstance.delete(endpoint);
+      showSuccessToast("Permanently deleted");
+      getAllFiles();
+    } catch (error) {
+      showErrorToast(error.response?.data?.error || error.message);
+    }
+  }, [getAllFiles]);
+
+  const handleEmptyTrash = async () => {
+    if (!window.confirm("Empty the trash bin? All items in the trash will be permanently deleted!")) return;
+    try {
+      await dispatch(emptyTrashBin()).unwrap();
+      showSuccessToast("Trash bin emptied");
+      getAllFiles();
+    } catch (error) {
+      showErrorToast(error || "Failed to empty trash");
+    }
+  };
 
   const handleRename = useCallback((oldFileName, _id, isFile) => {
     setNewFileName(oldFileName);
@@ -154,12 +148,28 @@ function DirectoryView({ isSharedMode = false }) {
   };
 
   const handleOpenFile = useCallback((item) => {
+    if (isTrashMode) {
+      showErrorToast("Restore this file to preview it.");
+      return;
+    }
     window.open(getUrl(item._id, true) + "?action=open");
-  }, []);
+  }, [isTrashMode]);
+
+  const handleOpenFolder = useCallback((_id) => {
+    if (isTrashMode) {
+      showErrorToast("Restore this folder to access its contents.");
+    } else {
+      navigate(getUrl(_id, false));
+    }
+  }, [isTrashMode, navigate]);
 
   const handleDownloadFile = useCallback((item) => {
+    if (isTrashMode) {
+      showErrorToast("Restore this file to download it.");
+      return;
+    }
     window.location.href = getUrl(item._id, true) + "?action=download";
-  }, []);
+  }, [isTrashMode]);
 
   const handleMakeOffline = useCallback(async (item) => {
     try {
@@ -269,21 +279,27 @@ function DirectoryView({ isSharedMode = false }) {
       onOpen: () => handleOpenFile(item),
       onDownload: () => handleDownloadFile(item),
       onRename: () => handleRename(item?.name, item?._id, true),
-      onDelete: () => handleDelete(item?._id, true, item),
+      onDelete: () => handleTrash(item?._id, true),
       onMakeOffline: () => handleMakeOffline(item),
       onOpenInDrive: () => handleOpenInDrive(item),
       onStatusChange: getAllFiles,
       onShare: () =>
         setSharingItem({ _id: item._id, name: item.name, isFile: true }),
+      isTrashMode,
+      onRestore: () => handleRestore(item?._id, true),
+      onDeletePermanently: () => handleDeletePermanently(item?._id, true),
     }),
     [
       handleOpenFile,
       handleDownloadFile,
       handleRename,
-      handleDelete,
+      handleTrash,
       handleMakeOffline,
       handleOpenInDrive,
       getAllFiles,
+      isTrashMode,
+      handleRestore,
+      handleDeletePermanently,
     ],
   );
 
@@ -326,7 +342,14 @@ function DirectoryView({ isSharedMode = false }) {
                 onBack={() => navigate(`/directory/${currentDir.parentDirId}`)}
               />
 
-              {!isSharedMode && (
+              {isTrashMode ? (
+                <button
+                  onClick={handleEmptyTrash}
+                  className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 transition-colors"
+                >
+                  Empty Trash
+                </button>
+              ) : !isSharedMode ? (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowCreateFolder(true)}
@@ -369,7 +392,7 @@ function DirectoryView({ isSharedMode = false }) {
                     />
                   </label>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <CreateFolderDialog
@@ -430,11 +453,11 @@ function DirectoryView({ isSharedMode = false }) {
                             key={`dir-${item._id}`}
                             item={item}
                             viewMode="list"
-                            onOpen={() => navigate(getUrl(item?._id, false))}
+                            onOpen={() => handleOpenFolder(item?._id)}
                             onRename={() =>
                               handleRename(item?.name, item?._id, false)
                             }
-                            onDelete={() => handleDelete(item?._id, false)}
+                            onDelete={() => handleTrash(item?._id, false)}
                             onShare={() =>
                               setSharingItem({
                                 _id: item._id,
@@ -442,6 +465,9 @@ function DirectoryView({ isSharedMode = false }) {
                                 isFile: false,
                               })
                             }
+                            onRestore={() => handleRestore(item._id, false)}
+                            onDeletePermanently={() => handleDeletePermanently(item._id, false)}
+                            isTrashMode={isTrashMode}
                           />
                         ))}
                         {fileList?.map((item) => (
@@ -463,11 +489,11 @@ function DirectoryView({ isSharedMode = false }) {
                         key={`dir-grid-${item._id}`}
                         item={item}
                         viewMode="grid"
-                        onOpen={() => navigate(getUrl(item?._id, false))}
+                        onOpen={() => handleOpenFolder(item?._id)}
                         onRename={() =>
                           handleRename(item?.name, item?._id, false)
                         }
-                        onDelete={() => handleDelete(item?._id, false)}
+                        onDelete={() => handleTrash(item?._id, false)}
                         onShare={() =>
                           setSharingItem({
                             _id: item._id,
@@ -475,6 +501,9 @@ function DirectoryView({ isSharedMode = false }) {
                             isFile: false,
                           })
                         }
+                        onRestore={() => handleRestore(item._id, false)}
+                        onDeletePermanently={() => handleDeletePermanently(item._id, false)}
+                        isTrashMode={isTrashMode}
                       />
                     ))}
                     {fileList?.map((item) => (
@@ -497,7 +526,7 @@ function DirectoryView({ isSharedMode = false }) {
                         <div className="flex items-center justify-between gap-3">
                           <div
                             className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
-                            onClick={() => navigate(getUrl(item?._id, false))}
+                            onClick={() => handleOpenFolder(item?._id)}
                           >
                             <svg
                               className="w-6 h-6 shrink-0 text-amber-400"
@@ -522,11 +551,11 @@ function DirectoryView({ isSharedMode = false }) {
                             <ActionMenu
                               item={item}
                               isFile={false}
-                              onOpen={() => navigate(getUrl(item?._id, false))}
+                              onOpen={() => handleOpenFolder(item?._id)}
                               onRename={() =>
                                 handleRename(item?.name, item?._id, false)
                               }
-                              onDelete={() => handleDelete(item?._id, false)}
+                              onDelete={() => handleTrash(item?._id, false)}
                               onShare={() =>
                                 setSharingItem({
                                   _id: item._id,
@@ -534,6 +563,9 @@ function DirectoryView({ isSharedMode = false }) {
                                   isFile: false,
                                 })
                               }
+                              isTrashMode={isTrashMode}
+                              onRestore={() => handleRestore(item._id, false)}
+                              onDeletePermanently={() => handleDeletePermanently(item._id, false)}
                             />
                           </div>
                         </div>

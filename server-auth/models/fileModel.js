@@ -45,6 +45,8 @@ const fileSchema = new Schema(
       allowEditorShare: { type: Boolean, default: true },
       allowDownload: { type: Boolean, default: true },
     },
+    isTrashed: { type: Boolean, default: false, index: true },
+    trashedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
