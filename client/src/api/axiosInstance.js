@@ -1,4 +1,6 @@
 import axios from "axios";
+import { router } from "../router";
+import { showErrorToast } from "../utils/toastConfig";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -27,40 +29,32 @@ const axiosInstance = axios.create({
 //   },
 // );
 
-// // Response interceptor
-// axiosInstance.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   (error) => {
-//     // Handle common error scenarios
-//     if (error.response) {
-//       // Server responded with error status
-//       const status = error.response.status;
+// Response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const isAuthEndpoint =
+        error.config?.url?.includes("/user/login") ||
+        error.config?.url?.includes("/user/signup");
+      const isAuthPage =
+        window.location.pathname.includes("/login") ||
+        window.location.pathname.includes("/signup");
 
-//       if (status === 401) {
-//         // Unauthorized - handle logout
-//         localStorage.removeItem("authToken");
-//         window.location.href = "/login";
-//       } else if (status === 403) {
-//         // Forbidden
-//         console.error("Access forbidden");
-//       } else if (status === 404) {
-//         // Not found
-//         console.error("Resource not found");
-//       } else if (status === 500) {
-//         // Server error
-//         console.error("Server error");
-//       }
-//     } else if (error.request) {
-//       // Request made but no response received
-//       console.error("No response from server");
-//     } else {
-//       // Error in request setup
-//       console.error("Error:", error.message);
-//     }
-//     return Promise.reject(error);
-//   },
-// );
+      if (!isAuthEndpoint && !isAuthPage) {
+        // Retrieve error message from response data if available
+        const errorMessage =
+          error.response.data?.error ||
+          error.response.data?.message ||
+          "Session expired. Please log in again.";
+        showErrorToast(errorMessage);
+        router.navigate("/login");
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default axiosInstance;

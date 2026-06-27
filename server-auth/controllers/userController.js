@@ -104,3 +104,27 @@ export const getUserDetails = async (req, res) => {
     googleDriveRootDirId: user.googleDriveRootDirId,
   });
 };
+
+export const searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.trim().length < 2) {
+      return res
+        .status(400)
+        .json({ error: 'Search query must be at least 2 characters' });
+    }
+    const users = await User.find({
+      _id: { $ne: req.user?._id },
+      $or: [
+        { email: { $regex: query, $options: 'i' } },
+        { username: { $regex: query, $options: 'i' } },
+      ],
+    })
+      .select('username email picture')
+      .limit(10)
+      .lean();
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

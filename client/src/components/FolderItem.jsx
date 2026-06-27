@@ -7,6 +7,7 @@ export default function FolderItem({
   onOpen,
   onRename,
   onDelete,
+  onShare,
 }) {
   const [showActions, setShowActions] = useState(false);
 
@@ -41,6 +42,7 @@ export default function FolderItem({
               onClose={() => setShowActions(false)}
               onRename={onRename}
               onDelete={onDelete}
+              onShare={onShare}
             />
           </div>
         </div>
@@ -92,6 +94,7 @@ export default function FolderItem({
             onClose={() => setShowActions(false)}
             onRename={onRename}
             onDelete={onDelete}
+            onShare={onShare}
           />
         </div>
       </td>

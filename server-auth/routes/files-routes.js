@@ -5,6 +5,8 @@ import {
   renameFile,
   serveFile,
   uploadFile,
+  getShareSettings,
+  updateShareSettings,
 } from '../controllers/fileController.js';
 import { getThumbnail } from '../controllers/thumbnailController.js';
 
@@ -17,5 +19,9 @@ fileRouter.get('/:id', serveFile);
 fileRouter.post('/', fileUploadMiddleware, uploadFile);
 
 fileRouter.route('/:id').patch(renameFile).delete(deleteFile);
+
+fileRouter.route('/:id/share')
+  .get(getShareSettings)
+  .post(updateShareSettings);
 
 export default fileRouter;

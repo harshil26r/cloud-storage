@@ -90,8 +90,10 @@ export default function Sidebar({ currentDir }) {
         {navItems.map((item) => {
           const isActive =
             item.path === "/"
-              ? !currentDir?.googleId && !location.pathname.includes("/directory/")
-              : false;
+              ? !currentDir?.googleId && !currentDir?.isVirtualSharedRoot && (location.pathname === "/" || location.pathname.includes("/directory/"))
+              : item.path === "/shared"
+              ? location.pathname === "/shared" || !!currentDir?.isVirtualSharedRoot
+              : location.pathname === item.path;
           return (
             <button
               key={item.path}

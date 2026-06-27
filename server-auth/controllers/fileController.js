@@ -6,7 +6,9 @@ import {
   deleteGoogleFile,
   deleteLocalFileIfExists,
   hasLocalCopy,
+  syncGDrivePermissions,
 } from '../services/googleDriveService.js';
+import { hasAccess } from '../middleware/checkAccess.js';
 
 export const serveFile = async (req, res) => {
   try {
@@ -22,14 +24,9 @@ export const serveFile = async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDir = await Directory.findOne({
-      _id: fileInfo.parentDirId,
-    });
-
-    if (parentDir?.userId.toString() !== user._id.toString()) {
-      return res
-        .status(401)
-        .json({ error: "You don't have permission to preview this file!" });
+    const allowed = await hasAccess(user?._id, fileInfo, 'file', 'viewer');
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
     }
 
     const isGoogleOnline =
@@ -82,6 +79,7 @@ export const serveFile = async (req, res) => {
 export const uploadFile = async (req, res) => {
   const parentDirId = req.body.parentDirId;
   const { _id, extension, originalname } = req.file;
+  const { user } = req;
 
   try {
     const fileCollection = await File.create({
@@ -89,6 +87,7 @@ export const uploadFile = async (req, res) => {
       extension,
       name: originalname,
       parentDirId,
+      userId: user?._id,
     });
 
     fileCollection.save();
@@ -121,14 +120,9 @@ export const renameFile = async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDir = await Directory.findOne({
-      _id: fileInfo.parentDirId,
-    });
-
-    if (parentDir?.userId.toString() !== user._id.toString()) {
-      return res
-        .status(401)
-        .json({ error: "You don't have permission to perform this action!" });
+    const allowed = await hasAccess(user?._id, fileInfo, 'file', 'editor');
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
     }
 
     await File.updateOne({ _id }, { $set: { name: newName } });
@@ -154,18 +148,9 @@ export const deleteFile = async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const parentDirData = await Directory.findOne({
-      _id: fileInfo.parentDirId,
-    });
-
-    if (!parentDirData) {
-      return res.status(404).json({ error: 'Parent directory not found' });
-    }
-
-    if (parentDirData.userId.toString() !== user._id.toString()) {
-      return res
-        .status(401)
-        .json({ error: "You don't have permission to perform this action!" });
+    const allowed = await hasAccess(user?._id, fileInfo, 'file', 'editor');
+    if (!allowed) {
+      return res.status(403).json({ error: 'Access Denied' });
     }
 
     if (fileInfo.googleId) {
@@ -192,6 +177,88 @@ export const deleteFile = async (req, res) => {
     res.status(200).json({ message: 'File deleted successfully' });
   } catch (err) {
     console.error('Delete error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getShareSettings = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id).lean();
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    // Validate read access (at least viewer)
+    const allowed = await hasAccess(req.user?._id, file, 'file', 'viewer');
+    if (!allowed) {
+      return res
+        .status(403)
+        .json({ error: 'You do not have permission to view share settings' });
+    }
+
+    let owner = null;
+    if (file.userId) {
+      const ownerUser = await User.findById(file.userId).lean();
+      if (ownerUser) {
+        owner = {
+          name: ownerUser.username,
+          email: ownerUser.email,
+        };
+      }
+    }
+
+    res.status(200).json({
+      sharedWith: file.sharedWith || [],
+      generalAccess: file.generalAccess || 'restricted',
+      settings: file.settings || { allowEditorShare: true },
+      googleId: file.googleId,
+      owner,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateShareSettings = async (req, res) => {
+  try {
+    const { sharedWith = [], generalAccess, settings } = req.body;
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    // Validate modification access
+    const isOwner =
+      file.userId &&
+      req.user?._id &&
+      file.userId.toString() === req.user._id.toString();
+    if (!isOwner) {
+      const isEditor = await hasAccess(req.user?._id, file, 'file', 'editor');
+      const allowEditorShare = file.settings?.allowEditorShare ?? true;
+      if (!isEditor || !allowEditorShare) {
+        return res.status(403).json({
+          error: 'You do not have permission to modify share settings',
+        });
+      }
+    }
+
+    file.sharedWith = sharedWith;
+    file.generalAccess = generalAccess;
+    if (settings) file.settings = settings;
+    await file.save();
+
+    if (file.googleId) {
+      const userData = await User.findById(req.user._id).lean();
+      if (userData?.googleAccessToken) {
+        await syncGDrivePermissions(
+          file.googleId,
+          userData.googleAccessToken,
+          userData.googleRefreshToken,
+          req.user._id,
+          sharedWith,
+          generalAccess,
+        );
+      }
+    }
+
+    res.status(200).json({ message: 'Share settings updated successfully' });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
